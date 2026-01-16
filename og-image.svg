@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a0b"/>
+      <stop offset="100%" stop-color="#18181b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Subtle grid -->
+  <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+    <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#27272a" stroke-width="0.5"/>
+  </pattern>
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.3"/>
+  
+  <!-- Glow effect -->
+  <ellipse cx="600" cy="280" rx="300" ry="200" fill="#8b5cf6" opacity="0.08"/>
+  
+  <!-- Logo -->
+  <g transform="translate(520, 140)">
+    <!-- Background circle -->
+    <circle cx="80" cy="80" r="70" fill="none" stroke="#27272a" stroke-width="12"/>
+    <!-- Progress circle -->
+    <circle cx="80" cy="80" r="70" fill="none" stroke="url(#progressGrad)" stroke-width="12" 
+            stroke-linecap="round" stroke-dasharray="440" stroke-dashoffset="110" 
+            transform="rotate(-90 80 80)"/>
+    <!-- Check mark -->
+    <path d="M50 80 L70 100 L110 60" fill="none" stroke="#8b5cf6" stroke-width="10" 
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- App name -->
+  <text x="600" y="360" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" 
+        font-size="72" font-weight="700" fill="white">
+    Task<tspan fill="url(#accent)">Flow</tspan>
+  </text>
+  
+  <!-- Tagline -->
+  <text x="600" y="420" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" 
+        font-size="28" fill="#a1a1aa">
+    Organise ta vie simplement
+  </text>
+  
+  <!-- Feature pills -->
+  <g transform="translate(310, 480)">
+    <!-- Pill 1 -->
+    <rect x="0" y="0" width="130" height="44" rx="22" fill="#27272a"/>
+    <circle cx="26" cy="22" r="8" fill="#ef4444"/>
+    <text x="46" y="28" font-family="system-ui, sans-serif" font-size="16" fill="#fafafa">Urgent</text>
+    
+    <!-- Pill 2 -->
+    <rect x="150" y="0" width="130" height="44" rx="22" fill="#27272a"/>
+    <circle cx="176" cy="22" r="8" fill="#f97316"/>
+    <text x="196" y="28" font-family="system-ui, sans-serif" font-size="16" fill="#fafafa">Normal</text>
+    
+    <!-- Pill 3 -->
+    <rect x="300" y="0" width="120" height="44" rx="22" fill="#27272a"/>
+    <circle cx="326" cy="22" r="8" fill="#22c55e"/>
+    <text x="346" y="28" font-family="system-ui, sans-serif" font-size="16" fill="#fafafa">Relax</text>
+    
+    <!-- Pill 4 -->
+    <rect x="440" y="0" width="140" height="44" rx="22" fill="#27272a"/>
+    <circle cx="466" cy="22" r="8" fill="#8b5cf6"/>
+    <text x="486" y="28" font-family="system-ui, sans-serif" font-size="16" fill="#fafafa">Synced</text>
+  </g>
+  
+  <!-- Bottom accent bar -->
+  <rect x="0" y="620" width="1200" height="10" fill="url(#accent)"/>
+</svg>
