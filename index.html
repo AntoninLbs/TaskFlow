@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>TaskFlow</title>
+  <meta name="theme-color" content="#8b5cf6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{--bg:#0a0a0b;--bg-card:#141416;--bg-elevated:#1c1c1f;--text:#fafafa;--text-secondary:#a1a1aa;--text-muted:#71717a;--border:#27272a;--accent:#8b5cf6;--red:#ef4444;--orange:#f97316;--green:#22c55e;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+    [data-theme="light"]{--bg:#fafafa;--bg-card:#fff;--bg-elevated:#f4f4f5;--text:#18181b;--text-secondary:#52525b;--text-muted:#a1a1aa;--border:#e4e4e7}
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+    .app{height:100%;display:flex;flex-direction:column;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom)}
+    .header{padding:16px 20px 12px;background:var(--bg)}
+    .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+    .header h1{font-size:28px;font-weight:700}
+    .header-date{font-size:13px;color:var(--text-muted)}
+    .user-avatar{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ec4899);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;cursor:pointer}
+    .user-avatar img{width:100%;height:100%;border-radius:10px;object-fit:cover}
+    .stats-row{display:flex;gap:10px;padding:0 20px 16px;overflow-x:auto;scrollbar-width:none}
+    .stats-row::-webkit-scrollbar{display:none}
+    .stat-chip{flex-shrink:0;padding:10px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:8px;cursor:pointer}
+    .stat-chip.active{border-color:var(--accent);background:rgba(139,92,246,0.1)}
+    .stat-chip .dot{width:8px;height:8px;border-radius:50%}
+    .stat-chip .dot.red{background:var(--red)}.stat-chip .dot.orange{background:var(--orange)}.stat-chip .dot.green{background:var(--green)}
+    .stat-chip span{font-size:13px;color:var(--text-secondary)}.stat-chip strong{font-size:15px;font-weight:600}
+    .main{flex:1;overflow-y:auto;padding:0 0 100px}
+    .section{padding:0 20px;margin-bottom:24px}
+    .section-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:12px}
+    .task-list{display:flex;flex-direction:column;gap:8px}
+    .task-item{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px}
+    .task-checkbox{width:24px;height:24px;border:2px solid var(--border);border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .task-checkbox.priority-high{border-color:var(--red)}.task-checkbox.priority-medium{border-color:var(--orange)}.task-checkbox.priority-low{border-color:var(--green)}
+    .task-checkbox.checked{background:var(--green);border-color:var(--green)}
+    .task-checkbox svg{width:14px;height:14px;opacity:0;color:#fff}.task-checkbox.checked svg{opacity:1}
+    .task-content{flex:1;min-width:0;cursor:pointer}
+    .task-title{font-size:15px;font-weight:500}.task-item.completed .task-title{text-decoration:line-through;color:var(--text-muted)}
+    .task-meta{display:flex;gap:8px;margin-top:4px}
+    .task-tag{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:500;background:var(--bg-elevated);color:var(--text-muted)}
+    .task-tag.urgent{background:rgba(239,68,68,0.15);color:var(--red)}
+    .empty-state{text-align:center;padding:60px 40px;color:var(--text-muted)}
+    .empty-state h3{font-size:17px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-top:1px solid var(--border);padding:8px 16px calc(8px + var(--safe-bottom));display:flex;justify-content:space-around;z-index:100}
+    .nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px;cursor:pointer;color:var(--text-muted);border-radius:12px}
+    .nav-item.active{color:var(--accent)}
+    .nav-item svg{width:24px;height:24px}.nav-item span{font-size:10px;font-weight:600}
+    .fab{position:fixed;bottom:calc(80px + var(--safe-bottom));right:20px;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#ec4899);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.3);z-index:101}
+    .fab svg{width:28px;height:28px;color:#fff}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;opacity:0;visibility:hidden;transition:all 0.2s}
+    .modal-overlay.active{opacity:1;visibility:visible}
+    .modal{position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-radius:24px 24px 0 0;max-height:90vh;overflow-y:auto;z-index:201;transform:translateY(100%);transition:transform 0.3s;padding-bottom:var(--safe-bottom)}
+    .modal-overlay.active .modal{transform:translateY(0)}
+    .modal-handle{width:36px;height:5px;background:var(--border);border-radius:3px;margin:12px auto}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 16px}
+    .modal-title{font-size:18px;font-weight:600}
+    .modal-close{width:32px;height:32px;border-radius:50%;background:var(--bg-elevated);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)}
+    .modal-close svg{width:18px;height:18px}
+    .modal-body{padding:0 20px 20px}
+    .form-group{margin-bottom:20px}
+    .form-input{width:100%;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:16px;color:var(--text);font-family:inherit}
+    .form-input:focus{outline:none;border-color:var(--accent)}
+    .form-input::placeholder{color:var(--text-muted)}
+    textarea.form-input{min-height:80px;resize:none}
+    .chips-row{display:flex;gap:8px;overflow-x:auto;padding:4px 0}
+    .chip{flex-shrink:0;padding:10px 16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-elevated);font-size:14px;font-weight:500;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:6px}
+    .chip.selected{border-color:var(--accent);background:rgba(139,92,246,0.15);color:var(--accent)}
+    .chip .dot{width:8px;height:8px;border-radius:50%}
+    .chip.priority-high .dot{background:var(--red)}.chip.priority-medium .dot{background:var(--orange)}.chip.priority-low .dot{background:var(--green)}
+    .action-row{display:flex;gap:12px;margin-top:24px}
+    .btn{flex:1;padding:16px;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+    .btn-primary{background:var(--accent);color:#fff}
+    .btn-secondary{background:var(--bg-elevated);color:var(--text);border:1px solid var(--border)}
+    .btn-danger{background:rgba(239,68,68,0.15);color:var(--red);margin-top:12px}
+    .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center}
+    .auth-screen.hidden{display:none}
+    .auth-logo{width:80px;height:80px;margin-bottom:24px}
+    .auth-title{font-size:32px;font-weight:700;margin-bottom:8px}
+    .auth-subtitle{font-size:16px;color:var(--text-muted);margin-bottom:48px;max-width:280px}
+    .auth-btn{width:100%;max-width:320px;padding:16px 24px;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);margin-bottom:16px}
+    .auth-btn svg{width:20px;height:20px}
+    .auth-skip{color:var(--text-muted);font-size:14px;cursor:pointer;padding:12px}
+    .toast{position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(100px);background:var(--bg-card);border:1px solid var(--border);padding:14px 20px;border-radius:14px;font-size:14px;font-weight:500;z-index:500;opacity:0;transition:all 0.3s}
+    .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+    .settings-panel{position:fixed;top:0;right:-100%;width:100%;max-width:360px;height:100%;background:var(--bg);z-index:250;transition:right 0.3s;padding:20px;padding-top:calc(20px + var(--safe-top));overflow-y:auto}
+    .settings-panel.open{right:0}
+    .settings-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:249;opacity:0;visibility:hidden;transition:all 0.3s}
+    .settings-backdrop.open{opacity:1;visibility:visible}
+    .settings-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
+    .settings-title{font-size:24px;font-weight:700}
+    .settings-section{margin-bottom:32px}
+    .settings-section-title{font-size:12px;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+    .settings-item{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer}
+    .settings-item-label{font-size:15px;font-weight:500}
+    .settings-item-value{font-size:14px;color:var(--text-muted)}
+    .toggle{width:52px;height:32px;background:var(--border);border-radius:16px;cursor:pointer;position:relative;transition:background 0.2s}
+    .toggle.active{background:var(--accent)}
+    .toggle::after{content:'';position:absolute;width:28px;height:28px;background:#fff;border-radius:14px;top:2px;left:2px;transition:left 0.2s}
+    .toggle.active::after{left:22px}
+    .sync-indicator{font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px}
+    .sync-indicator.syncing{color:var(--orange)}
+    @media(min-width:768px){.app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}.bottom-nav{max-width:480px;left:50%;transform:translateX(-50%)}.fab{right:calc(50% - 220px)}}
+  </style>
+</head>
+<body>
+  <div class="auth-screen" id="auth-screen">
+    <svg class="auth-logo" viewBox="0 0 80 80" fill="none">
+      <defs><linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs>
+      <circle cx="40" cy="40" r="35" fill="none" stroke="#27272a" stroke-width="6"/>
+      <circle cx="40" cy="40" r="35" fill="none" stroke="url(#logoGrad)" stroke-width="6" stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="55" transform="rotate(-90 40 40)"/>
+      <path d="M25 40l11 11 19-19" fill="none" stroke="#8b5cf6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1 class="auth-title">TaskFlow</h1>
+    <p class="auth-subtitle">Organise ta vie simplement. Synchronisé sur tous tes appareils.</p>
+    <button class="auth-btn" id="google-login">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continuer avec Google
+    </button>
+    <div class="auth-skip" id="auth-skip">Continuer sans compte</div>
+  </div>
+
+  <div class="app" id="app">
+    <header class="header">
+      <div class="header-top">
+        <div>
+          <h1 id="page-title">Aujourd'hui</h1>
+          <div class="header-date" id="header-date"></div>
+        </div>
+        <div class="user-avatar" id="user-avatar"><span id="user-initial">?</span></div>
+      </div>
+    </header>
+    <div class="stats-row" id="stats-row">
+      <div class="stat-chip active" data-filter="all"><span>Toutes</span><strong id="count-all">0</strong></div>
+      <div class="stat-chip" data-filter="urgent"><div class="dot red"></div><span>Urgent</span><strong id="count-urgent">0</strong></div>
+      <div class="stat-chip" data-filter="today"><div class="dot orange"></div><span>Aujourd'hui</span><strong id="count-today">0</strong></div>
+      <div class="stat-chip" data-filter="done"><div class="dot green"></div><span>Fait</span><strong id="count-done">0</strong></div>
+    </div>
+    <main class="main" id="main"></main>
+    <nav class="bottom-nav">
+      <div class="nav-item active" data-view="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Aujourd'hui</span></div>
+      <div class="nav-item" data-view="all"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>Toutes</span></div>
+      <div class="nav-item" data-view="categories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span>Catégories</span></div>
+      <div class="nav-item" data-view="archive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>Archives</span></div>
+    </nav>
+    <button class="fab" id="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  </div>
+
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Nouvelle tâche</h2>
+        <button class="modal-close" id="modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group"><input type="text" class="form-input" id="task-input" placeholder="Qu'est-ce que tu dois faire ?" autocomplete="off"></div>
+        <div class="form-group"><textarea class="form-input" id="task-notes" placeholder="Notes (optionnel)"></textarea></div>
+        <div class="form-group">
+          <div class="chips-row" id="priority-chips">
+            <div class="chip priority-high" data-priority="high"><div class="dot"></div>Urgent</div>
+            <div class="chip priority-medium selected" data-priority="medium"><div class="dot"></div>Normal</div>
+            <div class="chip priority-low" data-priority="low"><div class="dot"></div>Relax</div>
+          </div>
+        </div>
+        <div class="form-group"><div class="chips-row" id="category-chips"></div></div>
+        <div class="form-group"><input type="date" class="form-input" id="task-date"></div>
+        <div class="action-row">
+          <button class="btn btn-secondary" id="cancel-btn">Annuler</button>
+          <button class="btn btn-primary" id="save-btn">Enregistrer</button>
+        </div>
+        <button class="btn btn-danger" id="delete-btn" style="display:none;">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-backdrop" id="settings-backdrop"></div>
+  <div class="settings-panel" id="settings-panel">
+    <div class="settings-header">
+      <h2 class="settings-title">Paramètres</h2>
+      <button class="modal-close" id="settings-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Compte</div>
+      <div class="settings-item"><span class="settings-item-label">Email</span><span class="settings-item-value" id="settings-email">Non connecté</span></div>
+      <div class="settings-item" id="logout-item" style="display:none"><span class="settings-item-label" style="color:var(--red)">Déconnexion</span></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Apparence</div>
+      <div class="settings-item"><span class="settings-item-label">Mode sombre</span><div class="toggle active" id="theme-toggle"></div></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://qyrsuywefwaqxrhgyitj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const DEFAULT_CATEGORIES = [
+  { id: 'cat_todo', name: 'À faire', color: '#8b5cf6' },
+  { id: 'cat_shopping', name: 'À acheter', color: '#ec4899' }
+];
+
+let state = {
+  user: null,
+  tasks: [],
+  categories: [...DEFAULT_CATEGORIES],
+  archivedTasks: [],
+  currentView: 'today',
+  currentFilter: 'all',
+  editingTask: null,
+  theme: localStorage.getItem('tf_theme') || 'dark'
+};
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const genId = () => 'task_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function formatDate(d) {
+  if (!d) return null;
+  const date = new Date(d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tom = new Date(today); tom.setDate(tom.getDate()+1);
+  if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
+  if (date.toDateString() === tom.toDateString()) return 'Demain';
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+function getDaysUntil(d) {
+  if (!d) return null;
+  const date = new Date(d); const today = new Date();
+  today.setHours(0,0,0,0); date.setHours(0,0,0,0);
+  return Math.ceil((date - today) / (1000*60*60*24));
+}
+
+function getPriority(t) {
+  if (t.due_date || t.dueDate) {
+    const days = getDaysUntil(t.due_date || t.dueDate);
+    if (days !== null && days <= 1) return 'high';
+  }
+  return t.priority || 'medium';
+}
+
+function sortTasks(tasks) {
+  const order = { high: 0, medium: 1, low: 2 };
+  return [...tasks].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    const ap = getPriority(a), bp = getPriority(b);
+    if (order[ap] !== order[bp]) return order[ap] - order[bp];
+    return new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt);
+  });
+}
+
+// ===== AUTH =====
+async function checkAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    state.user = session.user;
+    await loadFromSupabase();
+    updateUserUI();
+    $('#auth-screen').classList.add('hidden');
+  }
+}
+
+sb.auth.onAuthStateChange(async (event, session) => {
+  console.log('Auth event:', event);
+  if (event === 'SIGNED_IN' && session?.user) {
+    state.user = session.user;
+    await loadFromSupabase();
+    updateUserUI();
+    $('#auth-screen').classList.add('hidden');
+    render();
+    toast('Connecté !');
+  } else if (event === 'SIGNED_OUT') {
+    state.user = null;
+    state.tasks = [];
+    updateUserUI();
+    render();
+  }
+});
+
+async function loginWithGoogle() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+  if (error) { toast('Erreur: ' + error.message); console.error(error); }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  state.user = null;
+  state.tasks = [];
+  localStorage.removeItem('tf_tasks');
+  updateUserUI();
+  closeSettings();
+  render();
+  toast('Déconnecté');
+}
+
+function updateUserUI() {
+  const avatar = $('#user-avatar');
+  const email = $('#settings-email');
+  const logoutItem = $('#logout-item');
+  
+  if (state.user) {
+    if (state.user.user_metadata?.avatar_url) {
+      avatar.innerHTML = `<img src="${state.user.user_metadata.avatar_url}" alt="">`;
+    } else {
+      avatar.innerHTML = `<span>${(state.user.email?.[0] || '?').toUpperCase()}</span>`;
+    }
+    email.textContent = state.user.email || 'Connecté';
+    logoutItem.style.display = 'flex';
+  } else {
+    avatar.innerHTML = '<span>?</span>';
+    email.textContent = 'Mode local';
+    logoutItem.style.display = 'none';
+  }
+}
+
+// ===== SUPABASE SYNC =====
+async function loadFromSupabase() {
+  if (!state.user) return;
+  
+  try {
+    const { data: tasks, error } = await sb
+      .from('tasks')
+      .select('*')
+      .eq('user_id', state.user.id)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    state.tasks = tasks || [];
+    console.log('Loaded', state.tasks.length, 'tasks from Supabase');
+  } catch (e) {
+    console.error('Load error:', e);
+    toast('Erreur de chargement');
+  }
+}
+
+async function saveTaskToSupabase(task) {
+  if (!state.user) {
+    saveLocal();
+    return;
+  }
+  
+  try {
+    const taskData = {
+      id: task.id,
+      user_id: state.user.id,
+      title: task.title,
+      notes: task.notes || null,
+      priority: task.priority || 'medium',
+      category_id: task.categoryId || task.category_id || null,
+      due_date: task.dueDate || task.due_date || null,
+      completed: task.completed || false,
+      created_at: task.createdAt || task.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    const { error } = await sb.from('tasks').upsert(taskData);
+    if (error) throw error;
+    console.log('Task saved to Supabase');
+  } catch (e) {
+    console.error('Save error:', e);
+    toast('Erreur de sauvegarde');
+  }
+}
+
+async function deleteTaskFromSupabase(taskId) {
+  if (!state.user) return;
+  try {
+    await sb.from('tasks').delete().eq('id', taskId);
+  } catch (e) {
+    console.error('Delete error:', e);
+  }
+}
+
+// ===== LOCAL STORAGE =====
+function loadLocal() {
+  const saved = localStorage.getItem('tf_tasks');
+  if (saved) state.tasks = JSON.parse(saved);
+  applyTheme();
+}
+
+function saveLocal() {
+  localStorage.setItem('tf_tasks', JSON.stringify(state.tasks));
+}
+
+// ===== THEME =====
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', state.theme);
+  $('#theme-toggle')?.classList.toggle('active', state.theme === 'dark');
+}
+
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('tf_theme', state.theme);
+  applyTheme();
+}
+
+// ===== RENDER =====
+function updateCounts() {
+  const active = state.tasks.filter(t => !t.completed);
+  const today = new Date().toISOString().split('T')[0];
+  $('#count-all').textContent = active.length;
+  $('#count-urgent').textContent = active.filter(t => getPriority(t) === 'high').length;
+  $('#count-today').textContent = active.filter(t => (t.due_date || t.dueDate) === today).length;
+  $('#count-done').textContent = state.tasks.filter(t => t.completed).length;
+}
+
+function renderTasks() {
+  const main = $('#main');
+  let tasks = [...state.tasks];
+  const today = new Date().toISOString().split('T')[0];
+
+  if (state.currentView === 'today') {
+    tasks = tasks.filter(t => !t.completed && ((t.due_date || t.dueDate) === today || getPriority(t) === 'high' || !(t.due_date || t.dueDate)));
+  } else if (state.currentView === 'all') {
+    tasks = tasks.filter(t => !t.completed);
+  } else if (state.currentView === 'archive') {
+    tasks = tasks.filter(t => t.completed);
+  } else if (state.currentView === 'categories') {
+    renderCategories();
+    return;
+  }
+
+  if (state.currentFilter === 'urgent') tasks = tasks.filter(t => getPriority(t) === 'high');
+  else if (state.currentFilter === 'today') tasks = tasks.filter(t => (t.due_date || t.dueDate) === today);
+  else if (state.currentFilter === 'done') tasks = state.tasks.filter(t => t.completed);
+
+  tasks = sortTasks(tasks);
+
+  if (!tasks.length) {
+    main.innerHTML = `<div class="empty-state"><h3>${state.currentView === 'archive' ? 'Aucune archive' : 'Tout est fait !'}</h3><p>Ajoute une tâche avec le bouton +</p></div>`;
+    return;
+  }
+
+  main.innerHTML = `<div class="section"><div class="task-list">${tasks.map(t => {
+    const p = getPriority(t);
+    const days = getDaysUntil(t.due_date || t.dueDate);
+    const cat = state.categories.find(c => c.id === (t.category_id || t.categoryId));
+    let dc = '';
+    if (days !== null && days <= 1) dc = 'urgent';
+    return `<div class="task-item ${t.completed?'completed':''}" data-id="${t.id}">
+      <div class="task-checkbox priority-${p} ${t.completed?'checked':''}" data-id="${t.id}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="task-content" data-id="${t.id}">
+        <div class="task-title">${t.title}</div>
+        <div class="task-meta">
+          ${cat ? `<span class="task-tag">${cat.name}</span>` : ''}
+          ${(t.due_date || t.dueDate) ? `<span class="task-tag ${dc}">${formatDate(t.due_date || t.dueDate)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div></div>`;
+
+  attachTaskListeners();
+}
+
+function renderCategories() {
+  const main = $('#main');
+  main.innerHTML = `<div class="section">${state.categories.map(cat => {
+    const count = state.tasks.filter(t => (t.category_id || t.categoryId) === cat.id && !t.completed).length;
+    return `<div class="stat-chip" style="margin-bottom:8px;width:100%;"><div class="dot" style="background:${cat.color}"></div><span style="flex:1">${cat.name}</span><strong>${count}</strong></div>`;
+  }).join('')}</div>`;
+}
+
+function renderCategoryChips() {
+  const container = $('#category-chips');
+  const selected = state.editingTask?.category_id || state.editingTask?.categoryId || state.categories[0]?.id;
+  container.innerHTML = state.categories.map(cat => 
+    `<div class="chip ${cat.id === selected ? 'selected' : ''}" data-category="${cat.id}"><div class="dot" style="background:${cat.color}"></div>${cat.name}</div>`
+  ).join('');
+}
+
+function render() {
+  updateCounts();
+  renderTasks();
+  updateNav();
+  const now = new Date();
+  $('#header-date').textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function updateNav() {
+  $$('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.view === state.currentView));
+  $$('.stat-chip[data-filter]').forEach(c => c.classList.toggle('active', c.dataset.filter === state.currentFilter));
+  const titles = { today: "Aujourd'hui", all: 'Toutes les tâches', categories: 'Catégories', archive: 'Archives' };
+  $('#page-title').textContent = titles[state.currentView] || "Aujourd'hui";
+}
+
+function attachTaskListeners() {
+  $$('.task-checkbox').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      completeTask(el.dataset.id);
+    });
+  });
+  $$('.task-content').forEach(el => {
+    el.addEventListener('click', () => {
+      const task = state.tasks.find(t => t.id === el.dataset.id);
+      if (task) openModal(task);
+    });
+  });
+}
+
+// ===== ACTIONS =====
+async function completeTask(id) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  task.completed = !task.completed;
+  task.updated_at = new Date().toISOString();
+  await saveTaskToSupabase(task);
+  saveLocal();
+  render();
+  if (task.completed) toast('Bien joué ! 🎉');
+}
+
+async function saveTask() {
+  const title = $('#task-input').value.trim();
+  if (!title) { toast('Ajoute un titre'); return; }
+  
+  const priority = $('.chip[data-priority].selected')?.dataset.priority || 'medium';
+  const categoryId = $('.chip[data-category].selected')?.dataset.category || state.categories[0]?.id;
+  const dueDate = $('#task-date').value || null;
+  const notes = $('#task-notes').value.trim();
+
+  if (state.editingTask) {
+    const task = state.tasks.find(t => t.id === state.editingTask.id);
+    if (task) {
+      task.title = title;
+      task.priority = priority;
+      task.category_id = categoryId;
+      task.due_date = dueDate;
+      task.notes = notes;
+      task.updated_at = new Date().toISOString();
+      await saveTaskToSupabase(task);
+    }
+    toast('Modifié');
+  } else {
+    const task = {
+      id: genId(),
+      title,
+      priority,
+      category_id: categoryId,
+      due_date: dueDate,
+      notes,
+      completed: false,
+      created_at: new Date().toISOString()
+    };
+    state.tasks.unshift(task);
+    await saveTaskToSupabase(task);
+    toast('Ajouté');
+  }
+  
+  saveLocal();
+  closeModal();
+  render();
+}
+
+async function deleteTask() {
+  if (!state.editingTask) return;
+  const id = state.editingTask.id;
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  await deleteTaskFromSupabase(id);
+  saveLocal();
+  closeModal();
+  render();
+  toast('Supprimé');
+}
+
+// ===== MODAL =====
+function openModal(task = null) {
+  state.editingTask = task;
+  $('#modal-title').textContent = task ? 'Modifier' : 'Nouvelle tâche';
+  $('#task-input').value = task?.title || '';
+  $('#task-notes').value = task?.notes || '';
+  $('#task-date').value = task?.due_date || task?.dueDate || '';
+  $('#delete-btn').style.display = task ? 'block' : 'none';
+  
+  $$('.chip[data-priority]').forEach(c => c.classList.toggle('selected', c.dataset.priority === (task?.priority || 'medium')));
+  renderCategoryChips();
+  if (task?.category_id || task?.categoryId) {
+    $$('.chip[data-category]').forEach(c => c.classList.toggle('selected', c.dataset.category === (task.category_id || task.categoryId)));
+  }
+  
+  $('#task-modal').classList.add('active');
+  setTimeout(() => $('#task-input').focus(), 300);
+}
+
+function closeModal() {
+  state.editingTask = null;
+  $('#task-modal').classList.remove('active');
+}
+
+function openSettings() {
+  $('#settings-panel').classList.add('open');
+  $('#settings-backdrop').classList.add('open');
+}
+
+function closeSettings() {
+  $('#settings-panel').classList.remove('open');
+  $('#settings-backdrop').classList.remove('open');
+}
+
+// ===== INIT =====
+async function init() {
+  loadLocal();
+  applyTheme();
+  await checkAuth();
+  render();
+
+  $('#google-login').addEventListener('click', loginWithGoogle);
+  $('#auth-skip').addEventListener('click', () => {
+    $('#auth-screen').classList.add('hidden');
+    toast('Mode local activé');
+  });
+  
+  $('#fab').addEventListener('click', () => openModal());
+  $('#modal-close').addEventListener('click', closeModal);
+  $('#cancel-btn').addEventListener('click', closeModal);
+  $('#save-btn').addEventListener('click', saveTask);
+  $('#delete-btn').addEventListener('click', deleteTask);
+  $('#task-modal').addEventListener('click', e => { if (e.target.id === 'task-modal') closeModal(); });
+
+  $$('.chip[data-priority]').forEach(c => c.addEventListener('click', () => {
+    $$('.chip[data-priority]').forEach(x => x.classList.remove('selected'));
+    c.classList.add('selected');
+  }));
+
+  $('#category-chips').addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (chip) {
+      $$('.chip[data-category]').forEach(x => x.classList.remove('selected'));
+      chip.classList.add('selected');
+    }
+  });
+
+  $$('.nav-item').forEach(i => i.addEventListener('click', () => {
+    state.currentView = i.dataset.view;
+    state.currentFilter = 'all';
+    render();
+  }));
+  
+  $$('.stat-chip[data-filter]').forEach(c => c.addEventListener('click', () => {
+    state.currentFilter = c.dataset.filter;
+    render();
+  }));
+
+  $('#user-avatar').addEventListener('click', openSettings);
+  $('#settings-close').addEventListener('click', closeSettings);
+  $('#settings-backdrop').addEventListener('click', closeSettings);
+  $('#theme-toggle').addEventListener('click', toggleTheme);
+  $('#logout-item').addEventListener('click', logout);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(console.error);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
