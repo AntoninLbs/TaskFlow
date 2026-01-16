@@ -1405,11 +1405,11 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8';
     
     // Initialize Supabase (only if configured)
-    let supabase = null;
+    let supabaseClient = null;
     let isSupabaseConfigured = false;
     
     if (SUPABASE_URL !== 'https://YOUR_PROJECT.supabase.co') {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       isSupabaseConfigured = true;
     }
 
@@ -1537,7 +1537,7 @@
           // Upload local tasks not in remote
           for (const task of state.tasks) {
             if (!remoteIds.has(task.id)) {
-              await supabase.from('tasks').insert({
+              await supabaseClient.from('tasks').insert({
                 ...task,
                 user_id: state.user.id
               });
@@ -1559,7 +1559,7 @@
         return;
       }
       
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         state.user = session.user;
         updateUserUI();
@@ -1575,7 +1575,7 @@
         return;
       }
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin
@@ -1590,7 +1590,7 @@
 
     async function logout() {
       if (isSupabaseConfigured) {
-        await supabase.auth.signOut();
+        await supabaseClient.auth.signOut();
       }
       state.user = null;
       updateUserUI();
