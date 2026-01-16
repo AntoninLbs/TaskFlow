@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root{--bg:#0a0a0b;--bg-card:#141416;--bg-elevated:#1c1c1f;--text:#fafafa;--text-secondary:#a1a1aa;--text-muted:#71717a;--border:#27272a;--accent:#8b5cf6;--red:#ef4444;--orange:#f97316;--green:#22c55e;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+    :root{--bg:#0a0a0b;--bg-card:#141416;--bg-elevated:#1c1c1f;--text:#fafafa;--text-secondary:#a1a1aa;--text-muted:#71717a;--border:#27272a;--accent:#8b5cf6;--red:#ef4444;--orange:#f97316;--green:#22c55e;--blue:#3b82f6;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
     [data-theme="light"]{--bg:#fafafa;--bg-card:#fff;--bg-elevated:#f4f4f5;--text:#18181b;--text-secondary:#52525b;--text-muted:#a1a1aa;--border:#e4e4e7}
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html,body{height:100%;overflow:hidden}
@@ -25,25 +25,26 @@
     .header-date{font-size:13px;color:var(--text-muted)}
     .user-avatar{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ec4899);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;cursor:pointer}
     .user-avatar img{width:100%;height:100%;border-radius:10px;object-fit:cover}
-    .stats-row{display:flex;gap:10px;padding:0 20px 16px;overflow-x:auto;scrollbar-width:none}
+    .stats-row{display:flex;gap:8px;padding:0 20px 16px;overflow-x:auto;scrollbar-width:none}
     .stats-row::-webkit-scrollbar{display:none}
-    .stat-chip{flex-shrink:0;padding:10px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:8px;cursor:pointer}
+    .stats-row.hidden{display:none}
+    .stat-chip{flex-shrink:0;padding:8px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.15s}
     .stat-chip.active{border-color:var(--accent);background:rgba(139,92,246,0.1)}
     .stat-chip .dot{width:8px;height:8px;border-radius:50%}
-    .stat-chip .dot.red{background:var(--red)}.stat-chip .dot.orange{background:var(--orange)}.stat-chip .dot.green{background:var(--green)}
-    .stat-chip span{font-size:13px;color:var(--text-secondary)}.stat-chip strong{font-size:15px;font-weight:600}
+    .stat-chip .dot.red{background:var(--red)}.stat-chip .dot.orange{background:var(--orange)}.stat-chip .dot.green{background:var(--green)}.stat-chip .dot.blue{background:var(--blue)}
+    .stat-chip span{font-size:12px;color:var(--text-secondary)}.stat-chip strong{font-size:14px;font-weight:600;margin-left:2px}
     .main{flex:1;overflow-y:auto;padding:0 0 100px}
     .section{padding:0 20px;margin-bottom:24px}
     .section-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:12px}
     .task-list{display:flex;flex-direction:column;gap:8px}
     .task-item{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px}
-    .task-checkbox{width:24px;height:24px;border:2px solid var(--border);border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .task-checkbox{width:24px;height:24px;border:2px solid var(--border);border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s}
     .task-checkbox.priority-high{border-color:var(--red)}.task-checkbox.priority-medium{border-color:var(--orange)}.task-checkbox.priority-low{border-color:var(--green)}
     .task-checkbox.checked{background:var(--green);border-color:var(--green)}
     .task-checkbox svg{width:14px;height:14px;opacity:0;color:#fff}.task-checkbox.checked svg{opacity:1}
     .task-content{flex:1;min-width:0;cursor:pointer}
     .task-title{font-size:15px;font-weight:500}.task-item.completed .task-title{text-decoration:line-through;color:var(--text-muted)}
-    .task-meta{display:flex;gap:8px;margin-top:4px}
+    .task-meta{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
     .task-tag{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:500;background:var(--bg-elevated);color:var(--text-muted)}
     .task-tag.urgent{background:rgba(239,68,68,0.15);color:var(--red)}
     .empty-state{text-align:center;padding:60px 40px;color:var(--text-muted)}
@@ -64,7 +65,7 @@
     .modal-close{width:32px;height:32px;border-radius:50%;background:var(--bg-elevated);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)}
     .modal-close svg{width:18px;height:18px}
     .modal-body{padding:0 20px 20px}
-    .form-group{margin-bottom:20px}
+    .form-group{margin-bottom:16px}
     .form-label{font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:8px;display:block}
     .form-input{width:100%;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:16px;color:var(--text);font-family:inherit}
     .form-input:focus{outline:none;border-color:var(--accent)}
@@ -75,20 +76,28 @@
     .chip.selected{border-color:var(--accent);background:rgba(139,92,246,0.15);color:var(--accent)}
     .chip .dot{width:8px;height:8px;border-radius:50%}
     .chip.priority-high .dot{background:var(--red)}.chip.priority-medium .dot{background:var(--orange)}.chip.priority-low .dot{background:var(--green)}
-    .action-row{display:flex;gap:12px;margin-top:24px}
-    .btn{flex:1;padding:16px;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+    .action-row{display:flex;gap:12px;margin-top:20px}
+    .btn{flex:1;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all 0.15s}
+    .btn:active{transform:scale(0.98)}
     .btn-primary{background:var(--accent);color:#fff}
     .btn-secondary{background:var(--bg-elevated);color:var(--text);border:1px solid var(--border)}
     .btn-danger{background:rgba(239,68,68,0.15);color:var(--red);margin-top:12px}
-    .btn-small{padding:8px 16px;font-size:14px;border-radius:8px}
-    .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center}
+    .btn-google{background:#fff;color:#333;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;gap:10px}
+    .btn-google svg{width:18px;height:18px}
+    .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;align-items:center;padding:40px 24px;text-align:center;overflow-y:auto}
     .auth-screen.hidden{display:none}
-    .auth-logo{width:80px;height:80px;margin-bottom:24px}
-    .auth-title{font-size:32px;font-weight:700;margin-bottom:8px}
-    .auth-subtitle{font-size:16px;color:var(--text-muted);margin-bottom:48px;max-width:280px}
-    .auth-btn{width:100%;max-width:320px;padding:16px 24px;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);margin-bottom:16px}
-    .auth-btn svg{width:20px;height:20px}
-    .auth-skip{color:var(--text-muted);font-size:14px;cursor:pointer;padding:12px}
+    .auth-logo{width:70px;height:70px;margin-top:40px;margin-bottom:20px}
+    .auth-title{font-size:28px;font-weight:700;margin-bottom:8px}
+    .auth-subtitle{font-size:15px;color:var(--text-muted);margin-bottom:32px;max-width:280px}
+    .auth-form{width:100%;max-width:320px}
+    .auth-tabs{display:flex;gap:0;margin-bottom:24px;background:var(--bg-elevated);border-radius:12px;padding:4px}
+    .auth-tab{flex:1;padding:10px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;border:none;color:var(--text-muted);transition:all 0.15s}
+    .auth-tab.active{background:var(--bg-card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+    .auth-divider{display:flex;align-items:center;gap:16px;margin:20px 0;color:var(--text-muted);font-size:13px}
+    .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+    .auth-link{color:var(--accent);font-size:13px;cursor:pointer;margin-top:16px;display:block}
+    .auth-error{background:rgba(239,68,68,0.1);color:var(--red);padding:12px;border-radius:10px;font-size:13px;margin-bottom:16px;display:none}
+    .auth-success{background:rgba(34,197,94,0.1);color:var(--green);padding:12px;border-radius:10px;font-size:13px;margin-bottom:16px;display:none}
     .toast{position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(100px);background:var(--bg-card);border:1px solid var(--border);padding:14px 20px;border-radius:14px;font-size:14px;font-weight:500;z-index:500;opacity:0;transition:all 0.3s}
     .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
     .settings-panel{position:fixed;top:0;right:-100%;width:100%;max-width:360px;height:100%;background:var(--bg);z-index:250;transition:right 0.3s;padding:20px;padding-top:calc(20px + var(--safe-top));overflow-y:auto}
@@ -112,12 +121,9 @@
     .category-item .count{font-size:13px;color:var(--text-muted);margin-right:8px}
     .category-item .delete-btn{width:28px;height:28px;border-radius:8px;background:rgba(239,68,68,0.1);border:none;color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center}
     .category-item .delete-btn svg{width:16px;height:16px}
-    .add-category-row{display:flex;gap:8px;margin-top:16px}
-    .add-category-row input{flex:1}
-    .color-picker{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    .color-picker{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
     .color-option{width:32px;height:32px;border-radius:8px;cursor:pointer;border:2px solid transparent}
     .color-option.selected{border-color:var(--text)}
-    .loading{display:flex;align-items:center;justify-content:center;height:100%;font-size:16px;color:var(--text-muted)}
     @media(min-width:768px){.app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}.bottom-nav{max-width:480px;left:50%;transform:translateX(-50%)}.fab{right:calc(50% - 220px)}}
   </style>
 </head>
@@ -131,11 +137,55 @@
     </svg>
     <h1 class="auth-title">TaskFlow</h1>
     <p class="auth-subtitle">Organise ta vie simplement. Synchronisé sur tous tes appareils.</p>
-    <button class="auth-btn" id="google-login">
-      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Continuer avec Google
-    </button>
-    <div class="auth-skip" id="auth-skip">Continuer sans compte</div>
+    
+    <div class="auth-form">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Connexion</button>
+        <button class="auth-tab" data-tab="signup">Inscription</button>
+      </div>
+      
+      <div id="auth-error" class="auth-error"></div>
+      <div id="auth-success" class="auth-success"></div>
+      
+      <div id="login-form">
+        <div class="form-group">
+          <input type="email" class="form-input" id="login-email" placeholder="Email" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <input type="password" class="form-input" id="login-password" placeholder="Mot de passe" autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary" id="login-btn" style="width:100%">Se connecter</button>
+        <div class="auth-link" id="forgot-password">Mot de passe oublié ?</div>
+      </div>
+      
+      <div id="signup-form" style="display:none">
+        <div class="form-group">
+          <input type="email" class="form-input" id="signup-email" placeholder="Email" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <input type="password" class="form-input" id="signup-password" placeholder="Mot de passe (min. 6 caractères)" autocomplete="new-password">
+        </div>
+        <button class="btn btn-primary" id="signup-btn" style="width:100%">Créer un compte</button>
+      </div>
+      
+      <div id="forgot-form" style="display:none">
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px">Entre ton email pour recevoir un lien de réinitialisation</p>
+        <div class="form-group">
+          <input type="email" class="form-input" id="forgot-email" placeholder="Email" autocomplete="email">
+        </div>
+        <button class="btn btn-primary" id="forgot-btn" style="width:100%">Envoyer le lien</button>
+        <div class="auth-link" id="back-to-login">← Retour à la connexion</div>
+      </div>
+      
+      <div class="auth-divider">ou</div>
+      
+      <button class="btn btn-google" id="google-login" style="width:100%">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continuer avec Google
+      </button>
+      
+      <div class="auth-link" id="skip-auth" style="margin-top:24px;color:var(--text-muted)">Continuer sans compte</div>
+    </div>
   </div>
 
   <div class="app" id="app" style="display:none">
@@ -150,9 +200,10 @@
     </header>
     <div class="stats-row" id="stats-row">
       <div class="stat-chip active" data-filter="all"><span>Toutes</span><strong id="count-all">0</strong></div>
-      <div class="stat-chip" data-filter="urgent"><div class="dot red"></div><span>Urgent</span><strong id="count-urgent">0</strong></div>
-      <div class="stat-chip" data-filter="today"><div class="dot orange"></div><span>Aujourd'hui</span><strong id="count-today">0</strong></div>
-      <div class="stat-chip" data-filter="done"><div class="dot green"></div><span>Fait</span><strong id="count-done">0</strong></div>
+      <div class="stat-chip" data-filter="high"><div class="dot red"></div><span>Urgent</span><strong id="count-urgent">0</strong></div>
+      <div class="stat-chip" data-filter="medium"><div class="dot orange"></div><span>Important</span><strong id="count-medium">0</strong></div>
+      <div class="stat-chip" data-filter="low"><div class="dot green"></div><span>Chill</span><strong id="count-low">0</strong></div>
+      <div class="stat-chip" data-filter="done"><div class="dot blue"></div><span>Fait</span><strong id="count-done">0</strong></div>
     </div>
     <main class="main" id="main"></main>
     <nav class="bottom-nav">
@@ -184,8 +235,8 @@
           <label class="form-label">Priorité</label>
           <div class="chips-row" id="priority-chips">
             <div class="chip priority-high" data-priority="high"><div class="dot"></div>Urgent</div>
-            <div class="chip priority-medium selected" data-priority="medium"><div class="dot"></div>Normal</div>
-            <div class="chip priority-low" data-priority="low"><div class="dot"></div>Relax</div>
+            <div class="chip priority-medium selected" data-priority="medium"><div class="dot"></div>Important</div>
+            <div class="chip priority-low" data-priority="low"><div class="dot"></div>Chill</div>
           </div>
         </div>
         <div class="form-group">
@@ -194,7 +245,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Échéance</label>
-          <input type="date" class="form-input" id="task-date" placeholder="Sélectionne une date">
+          <input type="date" class="form-input" id="task-date">
         </div>
         <div class="action-row">
           <button class="btn btn-secondary" id="cancel-btn">Annuler</button>
@@ -261,7 +312,13 @@
 const SUPABASE_URL = 'https://qyrsuywefwaqxrhgyitj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8';
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'taskflow-auth',
+    storage: window.localStorage
+  }
+});
 
 const DEFAULT_CATEGORIES = [
   { id: 'cat_todo', name: 'À faire', color: '#8b5cf6' },
@@ -276,7 +333,7 @@ let state = {
   currentFilter: 'all',
   editingTask: null,
   theme: localStorage.getItem('tf_theme') || 'dark',
-  isLocalMode: false
+  isLocalMode: localStorage.getItem('tf_local_mode') === 'true'
 };
 
 const $ = s => document.querySelector(s);
@@ -288,6 +345,25 @@ function toast(msg) {
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function showError(msg) {
+  const el = $('#auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  $('#auth-success').style.display = 'none';
+}
+
+function showSuccess(msg) {
+  const el = $('#auth-success');
+  el.textContent = msg;
+  el.style.display = 'block';
+  $('#auth-error').style.display = 'none';
+}
+
+function hideMessages() {
+  $('#auth-error').style.display = 'none';
+  $('#auth-success').style.display = 'none';
 }
 
 function formatDate(d) {
@@ -308,6 +384,10 @@ function getDaysUntil(d) {
 }
 
 function getPriority(t) {
+  return t.priority || 'medium';
+}
+
+function getEffectivePriority(t) {
   if (t.due_date || t.dueDate) {
     const days = getDaysUntil(t.due_date || t.dueDate);
     if (days !== null && days <= 1) return 'high';
@@ -319,7 +399,7 @@ function sortTasks(tasks) {
   const order = { high: 0, medium: 1, low: 2 };
   return [...tasks].sort((a, b) => {
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
-    const ap = getPriority(a), bp = getPriority(b);
+    const ap = getEffectivePriority(a), bp = getEffectivePriority(b);
     if (order[ap] !== order[bp]) return order[ap] - order[bp];
     return new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt);
   });
@@ -333,6 +413,7 @@ function showApp() {
 function showAuth() {
   $('#auth-screen').classList.remove('hidden');
   $('#app').style.display = 'none';
+  hideMessages();
 }
 
 // ===== AUTH =====
@@ -343,6 +424,8 @@ async function checkAuth() {
     
     if (session?.user) {
       state.user = session.user;
+      state.isLocalMode = false;
+      localStorage.removeItem('tf_local_mode');
       await loadFromSupabase();
       updateUserUI();
       showApp();
@@ -352,29 +435,114 @@ async function checkAuth() {
   } catch (e) {
     console.error('Auth check error:', e);
   }
+  
+  if (state.isLocalMode) {
+    state.tasks = JSON.parse(localStorage.getItem('tf_tasks')) || [];
+    updateUserUI();
+    showApp();
+    render();
+    return true;
+  }
+  
   return false;
 }
 
 sb.auth.onAuthStateChange(async (event, session) => {
-  console.log('Auth event:', event, session?.user?.email);
+  console.log('Auth event:', event);
   
-  if (event === 'SIGNED_IN' && session?.user) {
+  if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
     state.user = session.user;
     state.isLocalMode = false;
+    localStorage.removeItem('tf_local_mode');
     await loadFromSupabase();
     updateUserUI();
     showApp();
     render();
-    toast('Connecté !');
+    if (event === 'SIGNED_IN') toast('Connecté !');
   } else if (event === 'SIGNED_OUT') {
     state.user = null;
     state.tasks = [];
-    updateUserUI();
-    showAuth();
-  } else if (event === 'TOKEN_REFRESHED') {
-    console.log('Token refreshed');
+    if (!state.isLocalMode) {
+      updateUserUI();
+      showAuth();
+    }
   }
 });
+
+async function loginWithEmail() {
+  const email = $('#login-email').value.trim();
+  const password = $('#login-password').value;
+  
+  if (!email || !password) {
+    showError('Remplis tous les champs');
+    return;
+  }
+  
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  } catch (e) {
+    console.error(e);
+    if (e.message.includes('Invalid login')) {
+      showError('Email ou mot de passe incorrect');
+    } else {
+      showError(e.message);
+    }
+  }
+}
+
+async function signupWithEmail() {
+  const email = $('#signup-email').value.trim();
+  const password = $('#signup-password').value;
+  
+  if (!email || !password) {
+    showError('Remplis tous les champs');
+    return;
+  }
+  
+  if (password.length < 6) {
+    showError('Le mot de passe doit faire au moins 6 caractères');
+    return;
+  }
+  
+  try {
+    const { data, error } = await sb.auth.signUp({ 
+      email, 
+      password,
+      options: { emailRedirectTo: window.location.origin }
+    });
+    if (error) throw error;
+    
+    if (data?.user?.identities?.length === 0) {
+      showError('Cet email est déjà utilisé');
+    } else {
+      showSuccess('Vérifie ta boîte mail pour confirmer ton compte !');
+    }
+  } catch (e) {
+    console.error(e);
+    showError(e.message);
+  }
+}
+
+async function forgotPassword() {
+  const email = $('#forgot-email').value.trim();
+  
+  if (!email) {
+    showError('Entre ton email');
+    return;
+  }
+  
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    });
+    if (error) throw error;
+    showSuccess('Email envoyé ! Vérifie ta boîte mail.');
+  } catch (e) {
+    console.error(e);
+    showError(e.message);
+  }
+}
 
 async function loginWithGoogle() {
   try {
@@ -395,6 +563,7 @@ async function logout() {
   state.tasks = [];
   state.isLocalMode = false;
   localStorage.removeItem('tf_tasks');
+  localStorage.removeItem('tf_local_mode');
   updateUserUI();
   closeSettings();
   showAuth();
@@ -402,7 +571,9 @@ async function logout() {
 
 function continueWithoutAccount() {
   state.isLocalMode = true;
+  localStorage.setItem('tf_local_mode', 'true');
   state.tasks = JSON.parse(localStorage.getItem('tf_tasks')) || [];
+  updateUserUI();
   showApp();
   render();
   toast('Mode local activé');
@@ -441,10 +612,8 @@ async function loadFromSupabase() {
     
     if (error) throw error;
     state.tasks = tasks || [];
-    console.log('Loaded', state.tasks.length, 'tasks from Supabase');
   } catch (e) {
     console.error('Load error:', e);
-    toast('Erreur de chargement');
   }
 }
 
@@ -472,7 +641,6 @@ async function saveTaskToSupabase(task) {
     if (error) throw error;
   } catch (e) {
     console.error('Save error:', e);
-    toast('Erreur de sauvegarde');
   }
 }
 
@@ -485,7 +653,6 @@ async function deleteTaskFromSupabase(taskId) {
   }
 }
 
-// ===== LOCAL STORAGE =====
 function saveLocal() {
   localStorage.setItem('tf_tasks', JSON.stringify(state.tasks));
 }
@@ -509,20 +676,21 @@ function toggleTheme() {
 // ===== RENDER =====
 function updateCounts() {
   const active = state.tasks.filter(t => !t.completed);
-  const today = new Date().toISOString().split('T')[0];
   $('#count-all').textContent = active.length;
   $('#count-urgent').textContent = active.filter(t => getPriority(t) === 'high').length;
-  $('#count-today').textContent = active.filter(t => (t.due_date || t.dueDate) === today).length;
+  $('#count-medium').textContent = active.filter(t => getPriority(t) === 'medium').length;
+  $('#count-low').textContent = active.filter(t => getPriority(t) === 'low').length;
   $('#count-done').textContent = state.tasks.filter(t => t.completed).length;
 }
 
 function renderTasks() {
   const main = $('#main');
   let tasks = [...state.tasks];
-  const today = new Date().toISOString().split('T')[0];
 
+  // Filter by view
   if (state.currentView === 'today') {
-    tasks = tasks.filter(t => !t.completed && ((t.due_date || t.dueDate) === today || getPriority(t) === 'high' || !(t.due_date || t.dueDate)));
+    const today = new Date().toISOString().split('T')[0];
+    tasks = tasks.filter(t => !t.completed && ((t.due_date || t.dueDate) === today || getEffectivePriority(t) === 'high' || !(t.due_date || t.dueDate)));
   } else if (state.currentView === 'all') {
     tasks = tasks.filter(t => !t.completed);
   } else if (state.currentView === 'archive') {
@@ -532,19 +700,34 @@ function renderTasks() {
     return;
   }
 
-  if (state.currentFilter === 'urgent') tasks = tasks.filter(t => getPriority(t) === 'high');
-  else if (state.currentFilter === 'today') tasks = tasks.filter(t => (t.due_date || t.dueDate) === today);
-  else if (state.currentFilter === 'done') tasks = state.tasks.filter(t => t.completed);
+  // Filter by priority
+  if (state.currentFilter === 'high') {
+    tasks = tasks.filter(t => getPriority(t) === 'high' && !t.completed);
+  } else if (state.currentFilter === 'medium') {
+    tasks = tasks.filter(t => getPriority(t) === 'medium' && !t.completed);
+  } else if (state.currentFilter === 'low') {
+    tasks = tasks.filter(t => getPriority(t) === 'low' && !t.completed);
+  } else if (state.currentFilter === 'done') {
+    tasks = state.tasks.filter(t => t.completed);
+  }
 
   tasks = sortTasks(tasks);
 
   if (!tasks.length) {
-    main.innerHTML = `<div class="empty-state"><h3>${state.currentView === 'archive' ? 'Aucune archive' : 'Tout est fait !'}</h3><p>Ajoute une tâche avec le bouton +</p></div>`;
+    const messages = {
+      all: { title: 'Tout est fait !', sub: 'Ajoute une tâche avec le bouton +' },
+      high: { title: 'Aucune tâche urgente', sub: 'Profite du calme 😎' },
+      medium: { title: 'Aucune tâche importante', sub: 'Tout roule !' },
+      low: { title: 'Aucune tâche chill', sub: 'Ajoutes-en une !' },
+      done: { title: 'Aucune tâche terminée', sub: 'Commence par en finir une !' }
+    };
+    const msg = messages[state.currentFilter] || messages.all;
+    main.innerHTML = `<div class="empty-state"><h3>${msg.title}</h3><p>${msg.sub}</p></div>`;
     return;
   }
 
   main.innerHTML = `<div class="section"><div class="task-list">${tasks.map(t => {
-    const p = getPriority(t);
+    const p = getEffectivePriority(t);
     const days = getDaysUntil(t.due_date || t.dueDate);
     const cat = state.categories.find(c => c.id === (t.category_id || t.categoryId));
     let dc = '';
@@ -588,7 +771,6 @@ function renderCategories() {
     </div>
   `;
   
-  // Attach delete listeners
   $$('.category-item .delete-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -596,7 +778,6 @@ function renderCategories() {
     });
   });
   
-  // Add category button
   $('#add-category-btn')?.addEventListener('click', openCategoryModal);
 }
 
@@ -619,6 +800,10 @@ function render() {
 function updateNav() {
   $$('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.view === state.currentView));
   $$('.stat-chip[data-filter]').forEach(c => c.classList.toggle('active', c.dataset.filter === state.currentFilter));
+  
+  // Hide filters in categories view
+  $('#stats-row').classList.toggle('hidden', state.currentView === 'categories');
+  
   const titles = { today: "Aujourd'hui", all: 'Toutes les tâches', categories: 'Catégories', archive: 'Archives' };
   $('#page-title').textContent = titles[state.currentView] || "Aujourd'hui";
 }
@@ -706,12 +891,12 @@ async function deleteTask() {
 // ===== CATEGORY ACTIONS =====
 function deleteCategory(id) {
   if (state.categories.length <= 1) {
-    toast('Tu dois garder au moins une catégorie');
+    toast('Garde au moins une catégorie');
     return;
   }
   
   const cat = state.categories.find(c => c.id === id);
-  if (!confirm(`Supprimer la catégorie "${cat?.name}" ?`)) return;
+  if (!confirm(`Supprimer "${cat?.name}" ?`)) return;
   
   state.categories = state.categories.filter(c => c.id !== id);
   saveCategories();
@@ -725,13 +910,12 @@ function saveCategory() {
   
   const color = $('.color-option.selected')?.dataset.color || '#8b5cf6';
   
-  const category = {
+  state.categories.push({
     id: 'cat_' + genId(),
     name,
     color
-  };
+  });
   
-  state.categories.push(category);
   saveCategories();
   closeCategoryModal();
   render();
@@ -784,29 +968,66 @@ function closeSettings() {
   $('#settings-backdrop').classList.remove('open');
 }
 
+// ===== AUTH UI =====
+function showLoginForm() {
+  $('#login-form').style.display = 'block';
+  $('#signup-form').style.display = 'none';
+  $('#forgot-form').style.display = 'none';
+  $$('.auth-tab').forEach(t => t.classList.remove('active'));
+  $$('.auth-tab')[0].classList.add('active');
+  hideMessages();
+}
+
+function showSignupForm() {
+  $('#login-form').style.display = 'none';
+  $('#signup-form').style.display = 'block';
+  $('#forgot-form').style.display = 'none';
+  $$('.auth-tab').forEach(t => t.classList.remove('active'));
+  $$('.auth-tab')[1].classList.add('active');
+  hideMessages();
+}
+
+function showForgotForm() {
+  $('#login-form').style.display = 'none';
+  $('#signup-form').style.display = 'none';
+  $('#forgot-form').style.display = 'block';
+  $$('.auth-tab').forEach(t => t.classList.remove('active'));
+  hideMessages();
+}
+
 // ===== INIT =====
 async function init() {
   applyTheme();
   
-  // Check if already logged in
   const isLoggedIn = await checkAuth();
   
-  if (!isLoggedIn) {
-    // Check if was in local mode
-    const wasLocalMode = localStorage.getItem('tf_local_mode') === 'true';
-    if (wasLocalMode) {
-      continueWithoutAccount();
-    }
-    // Otherwise show auth screen
+  if (!isLoggedIn && !state.isLocalMode) {
+    showAuth();
   }
 
-  // Event listeners
-  $('#google-login').addEventListener('click', loginWithGoogle);
-  $('#auth-skip').addEventListener('click', () => {
-    localStorage.setItem('tf_local_mode', 'true');
-    continueWithoutAccount();
+  // Auth tabs
+  $$('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (tab.dataset.tab === 'login') showLoginForm();
+      else showSignupForm();
+    });
   });
-  
+
+  // Auth buttons
+  $('#login-btn').addEventListener('click', loginWithEmail);
+  $('#signup-btn').addEventListener('click', signupWithEmail);
+  $('#forgot-btn').addEventListener('click', forgotPassword);
+  $('#google-login').addEventListener('click', loginWithGoogle);
+  $('#skip-auth').addEventListener('click', continueWithoutAccount);
+  $('#forgot-password').addEventListener('click', showForgotForm);
+  $('#back-to-login').addEventListener('click', showLoginForm);
+
+  // Enter key for forms
+  $('#login-password').addEventListener('keypress', e => { if (e.key === 'Enter') loginWithEmail(); });
+  $('#signup-password').addEventListener('keypress', e => { if (e.key === 'Enter') signupWithEmail(); });
+  $('#forgot-email').addEventListener('keypress', e => { if (e.key === 'Enter') forgotPassword(); });
+
+  // Task modal
   $('#fab').addEventListener('click', () => openModal());
   $('#modal-close').addEventListener('click', closeModal);
   $('#cancel-btn').addEventListener('click', closeModal);
@@ -820,7 +1041,6 @@ async function init() {
   $('#category-save-btn').addEventListener('click', saveCategory);
   $('#category-modal').addEventListener('click', e => { if (e.target.id === 'category-modal') closeCategoryModal(); });
   
-  // Color picker
   $('#color-picker').addEventListener('click', e => {
     const option = e.target.closest('.color-option');
     if (option) {
@@ -861,18 +1081,7 @@ async function init() {
   $('#settings-close').addEventListener('click', closeSettings);
   $('#settings-backdrop').addEventListener('click', closeSettings);
   $('#theme-toggle').addEventListener('click', toggleTheme);
-  $('#logout-item').addEventListener('click', () => {
-    if (state.isLocalMode) {
-      localStorage.removeItem('tf_local_mode');
-      localStorage.removeItem('tf_tasks');
-      state.tasks = [];
-      state.isLocalMode = false;
-      closeSettings();
-      showAuth();
-    } else {
-      logout();
-    }
-  });
+  $('#logout-item').addEventListener('click', logout);
 
   // Service worker
   if ('serviceWorker' in navigator) {
