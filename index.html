@@ -65,11 +65,12 @@
     .modal-close svg{width:18px;height:18px}
     .modal-body{padding:0 20px 20px}
     .form-group{margin-bottom:20px}
+    .form-label{font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:8px;display:block}
     .form-input{width:100%;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:16px;color:var(--text);font-family:inherit}
     .form-input:focus{outline:none;border-color:var(--accent)}
     .form-input::placeholder{color:var(--text-muted)}
     textarea.form-input{min-height:80px;resize:none}
-    .chips-row{display:flex;gap:8px;overflow-x:auto;padding:4px 0}
+    .chips-row{display:flex;gap:8px;overflow-x:auto;padding:4px 0;flex-wrap:wrap}
     .chip{flex-shrink:0;padding:10px 16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-elevated);font-size:14px;font-weight:500;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:6px}
     .chip.selected{border-color:var(--accent);background:rgba(139,92,246,0.15);color:var(--accent)}
     .chip .dot{width:8px;height:8px;border-radius:50%}
@@ -79,6 +80,7 @@
     .btn-primary{background:var(--accent);color:#fff}
     .btn-secondary{background:var(--bg-elevated);color:var(--text);border:1px solid var(--border)}
     .btn-danger{background:rgba(239,68,68,0.15);color:var(--red);margin-top:12px}
+    .btn-small{padding:8px 16px;font-size:14px;border-radius:8px}
     .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center}
     .auth-screen.hidden{display:none}
     .auth-logo{width:80px;height:80px;margin-bottom:24px}
@@ -104,8 +106,18 @@
     .toggle.active{background:var(--accent)}
     .toggle::after{content:'';position:absolute;width:28px;height:28px;background:#fff;border-radius:14px;top:2px;left:2px;transition:left 0.2s}
     .toggle.active::after{left:22px}
-    .sync-indicator{font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px}
-    .sync-indicator.syncing{color:var(--orange)}
+    .category-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
+    .category-item .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+    .category-item .name{flex:1;font-size:15px;font-weight:500}
+    .category-item .count{font-size:13px;color:var(--text-muted);margin-right:8px}
+    .category-item .delete-btn{width:28px;height:28px;border-radius:8px;background:rgba(239,68,68,0.1);border:none;color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .category-item .delete-btn svg{width:16px;height:16px}
+    .add-category-row{display:flex;gap:8px;margin-top:16px}
+    .add-category-row input{flex:1}
+    .color-picker{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    .color-option{width:32px;height:32px;border-radius:8px;cursor:pointer;border:2px solid transparent}
+    .color-option.selected{border-color:var(--text)}
+    .loading{display:flex;align-items:center;justify-content:center;height:100%;font-size:16px;color:var(--text-muted)}
     @media(min-width:768px){.app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}.bottom-nav{max-width:480px;left:50%;transform:translateX(-50%)}.fab{right:calc(50% - 220px)}}
   </style>
 </head>
@@ -126,7 +138,7 @@
     <div class="auth-skip" id="auth-skip">Continuer sans compte</div>
   </div>
 
-  <div class="app" id="app">
+  <div class="app" id="app" style="display:none">
     <header class="header">
       <div class="header-top">
         <div>
@@ -160,22 +172,68 @@
         <button class="modal-close" id="modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="modal-body">
-        <div class="form-group"><input type="text" class="form-input" id="task-input" placeholder="Qu'est-ce que tu dois faire ?" autocomplete="off"></div>
-        <div class="form-group"><textarea class="form-input" id="task-notes" placeholder="Notes (optionnel)"></textarea></div>
         <div class="form-group">
+          <label class="form-label">Tâche</label>
+          <input type="text" class="form-input" id="task-input" placeholder="Qu'est-ce que tu dois faire ?" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea class="form-input" id="task-notes" placeholder="Ajoute des détails (optionnel)"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priorité</label>
           <div class="chips-row" id="priority-chips">
             <div class="chip priority-high" data-priority="high"><div class="dot"></div>Urgent</div>
             <div class="chip priority-medium selected" data-priority="medium"><div class="dot"></div>Normal</div>
             <div class="chip priority-low" data-priority="low"><div class="dot"></div>Relax</div>
           </div>
         </div>
-        <div class="form-group"><div class="chips-row" id="category-chips"></div></div>
-        <div class="form-group"><input type="date" class="form-input" id="task-date"></div>
+        <div class="form-group">
+          <label class="form-label">Catégorie</label>
+          <div class="chips-row" id="category-chips"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Échéance</label>
+          <input type="date" class="form-input" id="task-date" placeholder="Sélectionne une date">
+        </div>
         <div class="action-row">
           <button class="btn btn-secondary" id="cancel-btn">Annuler</button>
           <button class="btn btn-primary" id="save-btn">Enregistrer</button>
         </div>
         <button class="btn btn-danger" id="delete-btn" style="display:none;">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="category-modal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title">Nouvelle catégorie</h2>
+        <button class="modal-close" id="category-modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nom</label>
+          <input type="text" class="form-input" id="category-name-input" placeholder="Ex: Travail, Maison..." autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Couleur</label>
+          <div class="color-picker" id="color-picker">
+            <div class="color-option selected" data-color="#8b5cf6" style="background:#8b5cf6"></div>
+            <div class="color-option" data-color="#ec4899" style="background:#ec4899"></div>
+            <div class="color-option" data-color="#ef4444" style="background:#ef4444"></div>
+            <div class="color-option" data-color="#f97316" style="background:#f97316"></div>
+            <div class="color-option" data-color="#eab308" style="background:#eab308"></div>
+            <div class="color-option" data-color="#22c55e" style="background:#22c55e"></div>
+            <div class="color-option" data-color="#06b6d4" style="background:#06b6d4"></div>
+            <div class="color-option" data-color="#3b82f6" style="background:#3b82f6"></div>
+          </div>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-secondary" id="category-cancel-btn">Annuler</button>
+          <button class="btn btn-primary" id="category-save-btn">Ajouter</button>
+        </div>
       </div>
     </div>
   </div>
@@ -213,17 +271,17 @@ const DEFAULT_CATEGORIES = [
 let state = {
   user: null,
   tasks: [],
-  categories: [...DEFAULT_CATEGORIES],
-  archivedTasks: [],
+  categories: JSON.parse(localStorage.getItem('tf_categories')) || [...DEFAULT_CATEGORIES],
   currentView: 'today',
   currentFilter: 'all',
   editingTask: null,
-  theme: localStorage.getItem('tf_theme') || 'dark'
+  theme: localStorage.getItem('tf_theme') || 'dark',
+  isLocalMode: false
 };
 
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
-const genId = () => 'task_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
+const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
 function toast(msg) {
   const el = $('#toast');
@@ -267,51 +325,87 @@ function sortTasks(tasks) {
   });
 }
 
+function showApp() {
+  $('#auth-screen').classList.add('hidden');
+  $('#app').style.display = 'flex';
+}
+
+function showAuth() {
+  $('#auth-screen').classList.remove('hidden');
+  $('#app').style.display = 'none';
+}
+
 // ===== AUTH =====
 async function checkAuth() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) {
-    state.user = session.user;
-    await loadFromSupabase();
-    updateUserUI();
-    $('#auth-screen').classList.add('hidden');
+  try {
+    const { data: { session }, error } = await sb.auth.getSession();
+    if (error) throw error;
+    
+    if (session?.user) {
+      state.user = session.user;
+      await loadFromSupabase();
+      updateUserUI();
+      showApp();
+      render();
+      return true;
+    }
+  } catch (e) {
+    console.error('Auth check error:', e);
   }
+  return false;
 }
 
 sb.auth.onAuthStateChange(async (event, session) => {
-  console.log('Auth event:', event);
+  console.log('Auth event:', event, session?.user?.email);
+  
   if (event === 'SIGNED_IN' && session?.user) {
     state.user = session.user;
+    state.isLocalMode = false;
     await loadFromSupabase();
     updateUserUI();
-    $('#auth-screen').classList.add('hidden');
+    showApp();
     render();
     toast('Connecté !');
   } else if (event === 'SIGNED_OUT') {
     state.user = null;
     state.tasks = [];
     updateUserUI();
-    render();
+    showAuth();
+  } else if (event === 'TOKEN_REFRESHED') {
+    console.log('Token refreshed');
   }
 });
 
 async function loginWithGoogle() {
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.origin }
-  });
-  if (error) { toast('Erreur: ' + error.message); console.error(error); }
+  try {
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) throw error;
+  } catch (e) {
+    toast('Erreur: ' + e.message);
+    console.error(e);
+  }
 }
 
 async function logout() {
   await sb.auth.signOut();
   state.user = null;
   state.tasks = [];
+  state.isLocalMode = false;
   localStorage.removeItem('tf_tasks');
   updateUserUI();
   closeSettings();
+  showAuth();
+}
+
+function continueWithoutAccount() {
+  state.isLocalMode = true;
+  state.tasks = JSON.parse(localStorage.getItem('tf_tasks')) || [];
+  showApp();
   render();
-  toast('Déconnecté');
+  toast('Mode local activé');
 }
 
 function updateUserUI() {
@@ -329,8 +423,8 @@ function updateUserUI() {
     logoutItem.style.display = 'flex';
   } else {
     avatar.innerHTML = '<span>?</span>';
-    email.textContent = 'Mode local';
-    logoutItem.style.display = 'none';
+    email.textContent = state.isLocalMode ? 'Mode local' : 'Non connecté';
+    logoutItem.style.display = state.isLocalMode ? 'flex' : 'none';
   }
 }
 
@@ -355,7 +449,7 @@ async function loadFromSupabase() {
 }
 
 async function saveTaskToSupabase(task) {
-  if (!state.user) {
+  if (!state.user || state.isLocalMode) {
     saveLocal();
     return;
   }
@@ -367,16 +461,15 @@ async function saveTaskToSupabase(task) {
       title: task.title,
       notes: task.notes || null,
       priority: task.priority || 'medium',
-      category_id: task.categoryId || task.category_id || null,
-      due_date: task.dueDate || task.due_date || null,
+      category_id: task.category_id || null,
+      due_date: task.due_date || null,
       completed: task.completed || false,
-      created_at: task.createdAt || task.created_at || new Date().toISOString(),
+      created_at: task.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
     
     const { error } = await sb.from('tasks').upsert(taskData);
     if (error) throw error;
-    console.log('Task saved to Supabase');
   } catch (e) {
     console.error('Save error:', e);
     toast('Erreur de sauvegarde');
@@ -384,7 +477,7 @@ async function saveTaskToSupabase(task) {
 }
 
 async function deleteTaskFromSupabase(taskId) {
-  if (!state.user) return;
+  if (!state.user || state.isLocalMode) return;
   try {
     await sb.from('tasks').delete().eq('id', taskId);
   } catch (e) {
@@ -393,14 +486,12 @@ async function deleteTaskFromSupabase(taskId) {
 }
 
 // ===== LOCAL STORAGE =====
-function loadLocal() {
-  const saved = localStorage.getItem('tf_tasks');
-  if (saved) state.tasks = JSON.parse(saved);
-  applyTheme();
-}
-
 function saveLocal() {
   localStorage.setItem('tf_tasks', JSON.stringify(state.tasks));
+}
+
+function saveCategories() {
+  localStorage.setItem('tf_categories', JSON.stringify(state.categories));
 }
 
 // ===== THEME =====
@@ -465,7 +556,7 @@ function renderTasks() {
       <div class="task-content" data-id="${t.id}">
         <div class="task-title">${t.title}</div>
         <div class="task-meta">
-          ${cat ? `<span class="task-tag">${cat.name}</span>` : ''}
+          ${cat ? `<span class="task-tag" style="border-left:3px solid ${cat.color};padding-left:8px">${cat.name}</span>` : ''}
           ${(t.due_date || t.dueDate) ? `<span class="task-tag ${dc}">${formatDate(t.due_date || t.dueDate)}</span>` : ''}
         </div>
       </div>
@@ -477,10 +568,36 @@ function renderTasks() {
 
 function renderCategories() {
   const main = $('#main');
-  main.innerHTML = `<div class="section">${state.categories.map(cat => {
-    const count = state.tasks.filter(t => (t.category_id || t.categoryId) === cat.id && !t.completed).length;
-    return `<div class="stat-chip" style="margin-bottom:8px;width:100%;"><div class="dot" style="background:${cat.color}"></div><span style="flex:1">${cat.name}</span><strong>${count}</strong></div>`;
-  }).join('')}</div>`;
+  main.innerHTML = `
+    <div class="section">
+      <div class="section-title">Mes catégories</div>
+      ${state.categories.map(cat => {
+        const count = state.tasks.filter(t => (t.category_id || t.categoryId) === cat.id && !t.completed).length;
+        return `<div class="category-item" data-id="${cat.id}">
+          <div class="dot" style="background:${cat.color}"></div>
+          <div class="name">${cat.name}</div>
+          <div class="count">${count} tâche${count !== 1 ? 's' : ''}</div>
+          <button class="delete-btn" data-id="${cat.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`;
+      }).join('')}
+      <button class="btn btn-secondary" id="add-category-btn" style="margin-top:16px;width:100%">
+        + Ajouter une catégorie
+      </button>
+    </div>
+  `;
+  
+  // Attach delete listeners
+  $$('.category-item .delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteCategory(btn.dataset.id);
+    });
+  });
+  
+  // Add category button
+  $('#add-category-btn')?.addEventListener('click', openCategoryModal);
 }
 
 function renderCategoryChips() {
@@ -521,7 +638,7 @@ function attachTaskListeners() {
   });
 }
 
-// ===== ACTIONS =====
+// ===== TASK ACTIONS =====
 async function completeTask(id) {
   const task = state.tasks.find(t => t.id === id);
   if (!task) return;
@@ -586,7 +703,42 @@ async function deleteTask() {
   toast('Supprimé');
 }
 
-// ===== MODAL =====
+// ===== CATEGORY ACTIONS =====
+function deleteCategory(id) {
+  if (state.categories.length <= 1) {
+    toast('Tu dois garder au moins une catégorie');
+    return;
+  }
+  
+  const cat = state.categories.find(c => c.id === id);
+  if (!confirm(`Supprimer la catégorie "${cat?.name}" ?`)) return;
+  
+  state.categories = state.categories.filter(c => c.id !== id);
+  saveCategories();
+  render();
+  toast('Catégorie supprimée');
+}
+
+function saveCategory() {
+  const name = $('#category-name-input').value.trim();
+  if (!name) { toast('Ajoute un nom'); return; }
+  
+  const color = $('.color-option.selected')?.dataset.color || '#8b5cf6';
+  
+  const category = {
+    id: 'cat_' + genId(),
+    name,
+    color
+  };
+  
+  state.categories.push(category);
+  saveCategories();
+  closeCategoryModal();
+  render();
+  toast('Catégorie ajoutée');
+}
+
+// ===== MODALS =====
 function openModal(task = null) {
   state.editingTask = task;
   $('#modal-title').textContent = task ? 'Modifier' : 'Nouvelle tâche';
@@ -610,6 +762,18 @@ function closeModal() {
   $('#task-modal').classList.remove('active');
 }
 
+function openCategoryModal() {
+  $('#category-name-input').value = '';
+  $$('.color-option').forEach(c => c.classList.remove('selected'));
+  $('.color-option').classList.add('selected');
+  $('#category-modal').classList.add('active');
+  setTimeout(() => $('#category-name-input').focus(), 300);
+}
+
+function closeCategoryModal() {
+  $('#category-modal').classList.remove('active');
+}
+
 function openSettings() {
   $('#settings-panel').classList.add('open');
   $('#settings-backdrop').classList.add('open');
@@ -622,15 +786,25 @@ function closeSettings() {
 
 // ===== INIT =====
 async function init() {
-  loadLocal();
   applyTheme();
-  await checkAuth();
-  render();
+  
+  // Check if already logged in
+  const isLoggedIn = await checkAuth();
+  
+  if (!isLoggedIn) {
+    // Check if was in local mode
+    const wasLocalMode = localStorage.getItem('tf_local_mode') === 'true';
+    if (wasLocalMode) {
+      continueWithoutAccount();
+    }
+    // Otherwise show auth screen
+  }
 
+  // Event listeners
   $('#google-login').addEventListener('click', loginWithGoogle);
   $('#auth-skip').addEventListener('click', () => {
-    $('#auth-screen').classList.add('hidden');
-    toast('Mode local activé');
+    localStorage.setItem('tf_local_mode', 'true');
+    continueWithoutAccount();
   });
   
   $('#fab').addEventListener('click', () => openModal());
@@ -640,11 +814,28 @@ async function init() {
   $('#delete-btn').addEventListener('click', deleteTask);
   $('#task-modal').addEventListener('click', e => { if (e.target.id === 'task-modal') closeModal(); });
 
+  // Category modal
+  $('#category-modal-close').addEventListener('click', closeCategoryModal);
+  $('#category-cancel-btn').addEventListener('click', closeCategoryModal);
+  $('#category-save-btn').addEventListener('click', saveCategory);
+  $('#category-modal').addEventListener('click', e => { if (e.target.id === 'category-modal') closeCategoryModal(); });
+  
+  // Color picker
+  $('#color-picker').addEventListener('click', e => {
+    const option = e.target.closest('.color-option');
+    if (option) {
+      $$('.color-option').forEach(c => c.classList.remove('selected'));
+      option.classList.add('selected');
+    }
+  });
+
+  // Priority chips
   $$('.chip[data-priority]').forEach(c => c.addEventListener('click', () => {
     $$('.chip[data-priority]').forEach(x => x.classList.remove('selected'));
     c.classList.add('selected');
   }));
 
+  // Category chips
   $('#category-chips').addEventListener('click', e => {
     const chip = e.target.closest('.chip');
     if (chip) {
@@ -653,6 +844,7 @@ async function init() {
     }
   });
 
+  // Navigation
   $$('.nav-item').forEach(i => i.addEventListener('click', () => {
     state.currentView = i.dataset.view;
     state.currentFilter = 'all';
@@ -664,12 +856,25 @@ async function init() {
     render();
   }));
 
+  // Settings
   $('#user-avatar').addEventListener('click', openSettings);
   $('#settings-close').addEventListener('click', closeSettings);
   $('#settings-backdrop').addEventListener('click', closeSettings);
   $('#theme-toggle').addEventListener('click', toggleTheme);
-  $('#logout-item').addEventListener('click', logout);
+  $('#logout-item').addEventListener('click', () => {
+    if (state.isLocalMode) {
+      localStorage.removeItem('tf_local_mode');
+      localStorage.removeItem('tf_tasks');
+      state.tasks = [];
+      state.isLocalMode = false;
+      closeSettings();
+      showAuth();
+    } else {
+      logout();
+    }
+  });
 
+  // Service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(console.error);
   }
