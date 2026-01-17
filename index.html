@@ -140,8 +140,8 @@
     
     <div class="auth-form">
       <div class="auth-tabs">
-        <button class="auth-tab active" data-tab="login">Connexion</button>
-        <button class="auth-tab" data-tab="signup">Inscription</button>
+        <button class="auth-tab active" id="tab-login">Connexion</button>
+        <button class="auth-tab" id="tab-signup">Inscription</button>
       </div>
       
       <div id="auth-error" class="auth-error"></div>
@@ -195,7 +195,7 @@
           <h1 id="page-title">Aujourd'hui</h1>
           <div class="header-date" id="header-date"></div>
         </div>
-        <div class="user-avatar" id="user-avatar"><span id="user-initial">?</span></div>
+        <div class="user-avatar" id="user-avatar"><span>?</span></div>
       </div>
     </header>
     <div class="stats-row" id="stats-row">
@@ -309,787 +309,965 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://qyrsuywefwaqxrhgyitj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8';
+(function() {
+  'use strict';
+  
+  // ===== CONFIG =====
+  const SUPABASE_URL = 'https://qyrsuywefwaqxrhgyitj.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8';
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    persistSession: true,
-    storageKey: 'taskflow-auth',
-    storage: window.localStorage
-  }
-});
-
-const DEFAULT_CATEGORIES = [
-  { id: 'cat_todo', name: 'À faire', color: '#8b5cf6' },
-  { id: 'cat_shopping', name: 'À acheter', color: '#ec4899' }
-];
-
-let state = {
-  user: null,
-  tasks: [],
-  categories: JSON.parse(localStorage.getItem('tf_categories')) || [...DEFAULT_CATEGORIES],
-  currentView: 'today',
-  currentFilter: 'all',
-  editingTask: null,
-  theme: localStorage.getItem('tf_theme') || 'dark',
-  isLocalMode: localStorage.getItem('tf_local_mode') === 'true'
-};
-
-const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
-const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
-
-function toast(msg) {
-  const el = $('#toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
-
-function showError(msg) {
-  const el = $('#auth-error');
-  el.textContent = msg;
-  el.style.display = 'block';
-  $('#auth-success').style.display = 'none';
-}
-
-function showSuccess(msg) {
-  const el = $('#auth-success');
-  el.textContent = msg;
-  el.style.display = 'block';
-  $('#auth-error').style.display = 'none';
-}
-
-function hideMessages() {
-  $('#auth-error').style.display = 'none';
-  $('#auth-success').style.display = 'none';
-}
-
-function formatDate(d) {
-  if (!d) return null;
-  const date = new Date(d);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const tom = new Date(today); tom.setDate(tom.getDate()+1);
-  if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
-  if (date.toDateString() === tom.toDateString()) return 'Demain';
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-}
-
-function getDaysUntil(d) {
-  if (!d) return null;
-  const date = new Date(d); const today = new Date();
-  today.setHours(0,0,0,0); date.setHours(0,0,0,0);
-  return Math.ceil((date - today) / (1000*60*60*24));
-}
-
-function getPriority(t) {
-  return t.priority || 'medium';
-}
-
-function getEffectivePriority(t) {
-  if (t.due_date || t.dueDate) {
-    const days = getDaysUntil(t.due_date || t.dueDate);
-    if (days !== null && days <= 1) return 'high';
-  }
-  return t.priority || 'medium';
-}
-
-function sortTasks(tasks) {
-  const order = { high: 0, medium: 1, low: 2 };
-  return [...tasks].sort((a, b) => {
-    if (a.completed !== b.completed) return a.completed ? 1 : -1;
-    const ap = getEffectivePriority(a), bp = getEffectivePriority(b);
-    if (order[ap] !== order[bp]) return order[ap] - order[bp];
-    return new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt);
-  });
-}
-
-function showApp() {
-  $('#auth-screen').classList.add('hidden');
-  $('#app').style.display = 'flex';
-}
-
-function showAuth() {
-  $('#auth-screen').classList.remove('hidden');
-  $('#app').style.display = 'none';
-  hideMessages();
-}
-
-// ===== AUTH =====
-async function checkAuth() {
+  let sb = null;
+  
   try {
-    const { data: { session }, error } = await sb.auth.getSession();
-    if (error) throw error;
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        storageKey: 'tf-auth',
+        storage: window.localStorage
+      }
+    });
+  } catch(e) {
+    console.error('Supabase init error:', e);
+  }
+
+  const DEFAULT_CATEGORIES = [
+    { id: 'cat_todo', name: 'À faire', color: '#8b5cf6' },
+    { id: 'cat_shopping', name: 'À acheter', color: '#ec4899' }
+  ];
+
+  const state = {
+    user: null,
+    tasks: [],
+    categories: [],
+    currentView: 'today',
+    currentFilter: 'all',
+    editingTask: null,
+    theme: 'dark',
+    isLocalMode: false
+  };
+
+  // Load from localStorage
+  try {
+    state.categories = JSON.parse(localStorage.getItem('tf_categories')) || [...DEFAULT_CATEGORIES];
+    state.theme = localStorage.getItem('tf_theme') || 'dark';
+    state.isLocalMode = localStorage.getItem('tf_local_mode') === 'true';
+    state.tasks = JSON.parse(localStorage.getItem('tf_tasks')) || [];
+  } catch(e) {
+    console.error('LocalStorage error:', e);
+    state.categories = [...DEFAULT_CATEGORIES];
+  }
+
+  // ===== HELPERS =====
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+  const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+  function toast(msg) {
+    const el = $('#toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  function showError(msg) {
+    const el = $('#auth-error');
+    const suc = $('#auth-success');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+    if (suc) suc.style.display = 'none';
+  }
+
+  function showSuccess(msg) {
+    const el = $('#auth-success');
+    const err = $('#auth-error');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+    if (err) err.style.display = 'none';
+  }
+
+  function hideMessages() {
+    const err = $('#auth-error');
+    const suc = $('#auth-success');
+    if (err) err.style.display = 'none';
+    if (suc) suc.style.display = 'none';
+  }
+
+  function formatDate(d) {
+    if (!d) return null;
+    const date = new Date(d);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tom = new Date(today); tom.setDate(tom.getDate()+1);
+    if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
+    if (date.toDateString() === tom.toDateString()) return 'Demain';
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  }
+
+  function getDaysUntil(d) {
+    if (!d) return null;
+    const date = new Date(d); const today = new Date();
+    today.setHours(0,0,0,0); date.setHours(0,0,0,0);
+    return Math.ceil((date - today) / (1000*60*60*24));
+  }
+
+  function getPriority(t) {
+    return t.priority || 'medium';
+  }
+
+  function getEffectivePriority(t) {
+    const due = t.due_date || t.dueDate;
+    if (due) {
+      const days = getDaysUntil(due);
+      if (days !== null && days <= 1) return 'high';
+    }
+    return t.priority || 'medium';
+  }
+
+  function sortTasks(tasks) {
+    const order = { high: 0, medium: 1, low: 2 };
+    return [...tasks].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      const ap = getEffectivePriority(a), bp = getEffectivePriority(b);
+      if (order[ap] !== order[bp]) return order[ap] - order[bp];
+      return new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0);
+    });
+  }
+
+  // ===== UI TOGGLE =====
+  function showApp() {
+    const auth = $('#auth-screen');
+    const app = $('#app');
+    if (auth) auth.classList.add('hidden');
+    if (app) app.style.display = 'flex';
+  }
+
+  function showAuth() {
+    const auth = $('#auth-screen');
+    const app = $('#app');
+    if (auth) auth.classList.remove('hidden');
+    if (app) app.style.display = 'none';
+    hideMessages();
+  }
+
+  // ===== AUTH =====
+  async function checkAuth() {
+    if (!sb) {
+      if (state.isLocalMode) {
+        showApp();
+        render();
+        return true;
+      }
+      return false;
+    }
     
-    if (session?.user) {
-      state.user = session.user;
-      state.isLocalMode = false;
-      localStorage.removeItem('tf_local_mode');
-      await loadFromSupabase();
+    try {
+      const { data, error } = await sb.auth.getSession();
+      if (error) throw error;
+      
+      if (data?.session?.user) {
+        state.user = data.session.user;
+        state.isLocalMode = false;
+        localStorage.removeItem('tf_local_mode');
+        await loadFromSupabase();
+        updateUserUI();
+        showApp();
+        render();
+        return true;
+      }
+    } catch (e) {
+      console.error('Auth check error:', e);
+    }
+    
+    if (state.isLocalMode) {
       updateUserUI();
       showApp();
       render();
       return true;
     }
-  } catch (e) {
-    console.error('Auth check error:', e);
+    
+    return false;
   }
-  
-  if (state.isLocalMode) {
-    state.tasks = JSON.parse(localStorage.getItem('tf_tasks')) || [];
-    updateUserUI();
-    showApp();
-    render();
-    return true;
-  }
-  
-  return false;
-}
 
-sb.auth.onAuthStateChange(async (event, session) => {
-  console.log('Auth event:', event);
-  
-  if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-    state.user = session.user;
-    state.isLocalMode = false;
-    localStorage.removeItem('tf_local_mode');
-    await loadFromSupabase();
-    updateUserUI();
-    showApp();
-    render();
-    if (event === 'SIGNED_IN') toast('Connecté !');
-  } else if (event === 'SIGNED_OUT') {
+  function setupAuthListener() {
+    if (!sb) return;
+    
+    sb.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event);
+      
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        state.user = session.user;
+        state.isLocalMode = false;
+        localStorage.removeItem('tf_local_mode');
+        await loadFromSupabase();
+        updateUserUI();
+        showApp();
+        render();
+        if (event === 'SIGNED_IN') toast('Connecté !');
+      } else if (event === 'SIGNED_OUT') {
+        state.user = null;
+        state.tasks = [];
+        if (!state.isLocalMode) {
+          updateUserUI();
+          showAuth();
+        }
+      }
+    });
+  }
+
+  async function loginWithEmail() {
+    if (!sb) { showError('Service indisponible'); return; }
+    
+    const emailEl = $('#login-email');
+    const passEl = $('#login-password');
+    const email = emailEl?.value?.trim();
+    const password = passEl?.value;
+    
+    if (!email || !password) {
+      showError('Remplis tous les champs');
+      return;
+    }
+    
+    try {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } catch (e) {
+      console.error(e);
+      if (e.message && e.message.includes('Invalid login')) {
+        showError('Email ou mot de passe incorrect');
+      } else {
+        showError(e.message || 'Erreur de connexion');
+      }
+    }
+  }
+
+  async function signupWithEmail() {
+    if (!sb) { showError('Service indisponible'); return; }
+    
+    const emailEl = $('#signup-email');
+    const passEl = $('#signup-password');
+    const email = emailEl?.value?.trim();
+    const password = passEl?.value;
+    
+    if (!email || !password) {
+      showError('Remplis tous les champs');
+      return;
+    }
+    
+    if (password.length < 6) {
+      showError('Le mot de passe doit faire au moins 6 caractères');
+      return;
+    }
+    
+    try {
+      const { data, error } = await sb.auth.signUp({ 
+        email, 
+        password,
+        options: { emailRedirectTo: window.location.origin }
+      });
+      if (error) throw error;
+      
+      if (data?.user?.identities?.length === 0) {
+        showError('Cet email est déjà utilisé');
+      } else {
+        showSuccess('Vérifie ta boîte mail pour confirmer ton compte !');
+      }
+    } catch (e) {
+      console.error(e);
+      showError(e.message || 'Erreur lors de l\'inscription');
+    }
+  }
+
+  async function forgotPassword() {
+    if (!sb) { showError('Service indisponible'); return; }
+    
+    const emailEl = $('#forgot-email');
+    const email = emailEl?.value?.trim();
+    
+    if (!email) {
+      showError('Entre ton email');
+      return;
+    }
+    
+    try {
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin
+      });
+      if (error) throw error;
+      showSuccess('Email envoyé ! Vérifie ta boîte mail.');
+    } catch (e) {
+      console.error(e);
+      showError(e.message || 'Erreur');
+    }
+  }
+
+  async function loginWithGoogle() {
+    if (!sb) { toast('Service indisponible'); return; }
+    
+    try {
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) throw error;
+    } catch (e) {
+      toast('Erreur: ' + (e.message || 'Connexion échouée'));
+      console.error(e);
+    }
+  }
+
+  async function logout() {
+    if (sb) {
+      try { await sb.auth.signOut(); } catch(e) { console.error(e); }
+    }
     state.user = null;
     state.tasks = [];
-    if (!state.isLocalMode) {
-      updateUserUI();
-      showAuth();
-    }
-  }
-});
-
-async function loginWithEmail() {
-  const email = $('#login-email').value.trim();
-  const password = $('#login-password').value;
-  
-  if (!email || !password) {
-    showError('Remplis tous les champs');
-    return;
-  }
-  
-  try {
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-  } catch (e) {
-    console.error(e);
-    if (e.message.includes('Invalid login')) {
-      showError('Email ou mot de passe incorrect');
-    } else {
-      showError(e.message);
-    }
-  }
-}
-
-async function signupWithEmail() {
-  const email = $('#signup-email').value.trim();
-  const password = $('#signup-password').value;
-  
-  if (!email || !password) {
-    showError('Remplis tous les champs');
-    return;
-  }
-  
-  if (password.length < 6) {
-    showError('Le mot de passe doit faire au moins 6 caractères');
-    return;
-  }
-  
-  try {
-    const { data, error } = await sb.auth.signUp({ 
-      email, 
-      password,
-      options: { emailRedirectTo: window.location.origin }
-    });
-    if (error) throw error;
-    
-    if (data?.user?.identities?.length === 0) {
-      showError('Cet email est déjà utilisé');
-    } else {
-      showSuccess('Vérifie ta boîte mail pour confirmer ton compte !');
-    }
-  } catch (e) {
-    console.error(e);
-    showError(e.message);
-  }
-}
-
-async function forgotPassword() {
-  const email = $('#forgot-email').value.trim();
-  
-  if (!email) {
-    showError('Entre ton email');
-    return;
-  }
-  
-  try {
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin
-    });
-    if (error) throw error;
-    showSuccess('Email envoyé ! Vérifie ta boîte mail.');
-  } catch (e) {
-    console.error(e);
-    showError(e.message);
-  }
-}
-
-async function loginWithGoogle() {
-  try {
-    const { error } = await sb.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin }
-    });
-    if (error) throw error;
-  } catch (e) {
-    toast('Erreur: ' + e.message);
-    console.error(e);
-  }
-}
-
-async function logout() {
-  await sb.auth.signOut();
-  state.user = null;
-  state.tasks = [];
-  state.isLocalMode = false;
-  localStorage.removeItem('tf_tasks');
-  localStorage.removeItem('tf_local_mode');
-  updateUserUI();
-  closeSettings();
-  showAuth();
-}
-
-function continueWithoutAccount() {
-  state.isLocalMode = true;
-  localStorage.setItem('tf_local_mode', 'true');
-  state.tasks = JSON.parse(localStorage.getItem('tf_tasks')) || [];
-  updateUserUI();
-  showApp();
-  render();
-  toast('Mode local activé');
-}
-
-function updateUserUI() {
-  const avatar = $('#user-avatar');
-  const email = $('#settings-email');
-  const logoutItem = $('#logout-item');
-  
-  if (state.user) {
-    if (state.user.user_metadata?.avatar_url) {
-      avatar.innerHTML = `<img src="${state.user.user_metadata.avatar_url}" alt="">`;
-    } else {
-      avatar.innerHTML = `<span>${(state.user.email?.[0] || '?').toUpperCase()}</span>`;
-    }
-    email.textContent = state.user.email || 'Connecté';
-    logoutItem.style.display = 'flex';
-  } else {
-    avatar.innerHTML = '<span>?</span>';
-    email.textContent = state.isLocalMode ? 'Mode local' : 'Non connecté';
-    logoutItem.style.display = state.isLocalMode ? 'flex' : 'none';
-  }
-}
-
-// ===== SUPABASE SYNC =====
-async function loadFromSupabase() {
-  if (!state.user) return;
-  
-  try {
-    const { data: tasks, error } = await sb
-      .from('tasks')
-      .select('*')
-      .eq('user_id', state.user.id)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    state.tasks = tasks || [];
-  } catch (e) {
-    console.error('Load error:', e);
-  }
-}
-
-async function saveTaskToSupabase(task) {
-  if (!state.user || state.isLocalMode) {
-    saveLocal();
-    return;
-  }
-  
-  try {
-    const taskData = {
-      id: task.id,
-      user_id: state.user.id,
-      title: task.title,
-      notes: task.notes || null,
-      priority: task.priority || 'medium',
-      category_id: task.category_id || null,
-      due_date: task.due_date || null,
-      completed: task.completed || false,
-      created_at: task.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    const { error } = await sb.from('tasks').upsert(taskData);
-    if (error) throw error;
-  } catch (e) {
-    console.error('Save error:', e);
-  }
-}
-
-async function deleteTaskFromSupabase(taskId) {
-  if (!state.user || state.isLocalMode) return;
-  try {
-    await sb.from('tasks').delete().eq('id', taskId);
-  } catch (e) {
-    console.error('Delete error:', e);
-  }
-}
-
-function saveLocal() {
-  localStorage.setItem('tf_tasks', JSON.stringify(state.tasks));
-}
-
-function saveCategories() {
-  localStorage.setItem('tf_categories', JSON.stringify(state.categories));
-}
-
-// ===== THEME =====
-function applyTheme() {
-  document.documentElement.setAttribute('data-theme', state.theme);
-  $('#theme-toggle')?.classList.toggle('active', state.theme === 'dark');
-}
-
-function toggleTheme() {
-  state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('tf_theme', state.theme);
-  applyTheme();
-}
-
-// ===== RENDER =====
-function updateCounts() {
-  const active = state.tasks.filter(t => !t.completed);
-  $('#count-all').textContent = active.length;
-  $('#count-urgent').textContent = active.filter(t => getPriority(t) === 'high').length;
-  $('#count-medium').textContent = active.filter(t => getPriority(t) === 'medium').length;
-  $('#count-low').textContent = active.filter(t => getPriority(t) === 'low').length;
-  $('#count-done').textContent = state.tasks.filter(t => t.completed).length;
-}
-
-function renderTasks() {
-  const main = $('#main');
-  let tasks = [...state.tasks];
-
-  // Filter by view
-  if (state.currentView === 'today') {
-    const today = new Date().toISOString().split('T')[0];
-    tasks = tasks.filter(t => !t.completed && ((t.due_date || t.dueDate) === today || getEffectivePriority(t) === 'high' || !(t.due_date || t.dueDate)));
-  } else if (state.currentView === 'all') {
-    tasks = tasks.filter(t => !t.completed);
-  } else if (state.currentView === 'archive') {
-    tasks = tasks.filter(t => t.completed);
-  } else if (state.currentView === 'categories') {
-    renderCategories();
-    return;
-  }
-
-  // Filter by priority
-  if (state.currentFilter === 'high') {
-    tasks = tasks.filter(t => getPriority(t) === 'high' && !t.completed);
-  } else if (state.currentFilter === 'medium') {
-    tasks = tasks.filter(t => getPriority(t) === 'medium' && !t.completed);
-  } else if (state.currentFilter === 'low') {
-    tasks = tasks.filter(t => getPriority(t) === 'low' && !t.completed);
-  } else if (state.currentFilter === 'done') {
-    tasks = state.tasks.filter(t => t.completed);
-  }
-
-  tasks = sortTasks(tasks);
-
-  if (!tasks.length) {
-    const messages = {
-      all: { title: 'Tout est fait !', sub: 'Ajoute une tâche avec le bouton +' },
-      high: { title: 'Aucune tâche urgente', sub: 'Profite du calme 😎' },
-      medium: { title: 'Aucune tâche importante', sub: 'Tout roule !' },
-      low: { title: 'Aucune tâche chill', sub: 'Ajoutes-en une !' },
-      done: { title: 'Aucune tâche terminée', sub: 'Commence par en finir une !' }
-    };
-    const msg = messages[state.currentFilter] || messages.all;
-    main.innerHTML = `<div class="empty-state"><h3>${msg.title}</h3><p>${msg.sub}</p></div>`;
-    return;
-  }
-
-  main.innerHTML = `<div class="section"><div class="task-list">${tasks.map(t => {
-    const p = getEffectivePriority(t);
-    const days = getDaysUntil(t.due_date || t.dueDate);
-    const cat = state.categories.find(c => c.id === (t.category_id || t.categoryId));
-    let dc = '';
-    if (days !== null && days <= 1) dc = 'urgent';
-    return `<div class="task-item ${t.completed?'completed':''}" data-id="${t.id}">
-      <div class="task-checkbox priority-${p} ${t.completed?'checked':''}" data-id="${t.id}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div class="task-content" data-id="${t.id}">
-        <div class="task-title">${t.title}</div>
-        <div class="task-meta">
-          ${cat ? `<span class="task-tag" style="border-left:3px solid ${cat.color};padding-left:8px">${cat.name}</span>` : ''}
-          ${(t.due_date || t.dueDate) ? `<span class="task-tag ${dc}">${formatDate(t.due_date || t.dueDate)}</span>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('')}</div></div>`;
-
-  attachTaskListeners();
-}
-
-function renderCategories() {
-  const main = $('#main');
-  main.innerHTML = `
-    <div class="section">
-      <div class="section-title">Mes catégories</div>
-      ${state.categories.map(cat => {
-        const count = state.tasks.filter(t => (t.category_id || t.categoryId) === cat.id && !t.completed).length;
-        return `<div class="category-item" data-id="${cat.id}">
-          <div class="dot" style="background:${cat.color}"></div>
-          <div class="name">${cat.name}</div>
-          <div class="count">${count} tâche${count !== 1 ? 's' : ''}</div>
-          <button class="delete-btn" data-id="${cat.id}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>`;
-      }).join('')}
-      <button class="btn btn-secondary" id="add-category-btn" style="margin-top:16px;width:100%">
-        + Ajouter une catégorie
-      </button>
-    </div>
-  `;
-  
-  $$('.category-item .delete-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      deleteCategory(btn.dataset.id);
-    });
-  });
-  
-  $('#add-category-btn')?.addEventListener('click', openCategoryModal);
-}
-
-function renderCategoryChips() {
-  const container = $('#category-chips');
-  const selected = state.editingTask?.category_id || state.editingTask?.categoryId || state.categories[0]?.id;
-  container.innerHTML = state.categories.map(cat => 
-    `<div class="chip ${cat.id === selected ? 'selected' : ''}" data-category="${cat.id}"><div class="dot" style="background:${cat.color}"></div>${cat.name}</div>`
-  ).join('');
-}
-
-function render() {
-  updateCounts();
-  renderTasks();
-  updateNav();
-  const now = new Date();
-  $('#header-date').textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-}
-
-function updateNav() {
-  $$('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.view === state.currentView));
-  $$('.stat-chip[data-filter]').forEach(c => c.classList.toggle('active', c.dataset.filter === state.currentFilter));
-  
-  // Hide filters in categories view
-  $('#stats-row').classList.toggle('hidden', state.currentView === 'categories');
-  
-  const titles = { today: "Aujourd'hui", all: 'Toutes les tâches', categories: 'Catégories', archive: 'Archives' };
-  $('#page-title').textContent = titles[state.currentView] || "Aujourd'hui";
-}
-
-function attachTaskListeners() {
-  $$('.task-checkbox').forEach(el => {
-    el.addEventListener('click', e => {
-      e.stopPropagation();
-      completeTask(el.dataset.id);
-    });
-  });
-  $$('.task-content').forEach(el => {
-    el.addEventListener('click', () => {
-      const task = state.tasks.find(t => t.id === el.dataset.id);
-      if (task) openModal(task);
-    });
-  });
-}
-
-// ===== TASK ACTIONS =====
-async function completeTask(id) {
-  const task = state.tasks.find(t => t.id === id);
-  if (!task) return;
-  task.completed = !task.completed;
-  task.updated_at = new Date().toISOString();
-  await saveTaskToSupabase(task);
-  saveLocal();
-  render();
-  if (task.completed) toast('Bien joué ! 🎉');
-}
-
-async function saveTask() {
-  const title = $('#task-input').value.trim();
-  if (!title) { toast('Ajoute un titre'); return; }
-  
-  const priority = $('.chip[data-priority].selected')?.dataset.priority || 'medium';
-  const categoryId = $('.chip[data-category].selected')?.dataset.category || state.categories[0]?.id;
-  const dueDate = $('#task-date').value || null;
-  const notes = $('#task-notes').value.trim();
-
-  if (state.editingTask) {
-    const task = state.tasks.find(t => t.id === state.editingTask.id);
-    if (task) {
-      task.title = title;
-      task.priority = priority;
-      task.category_id = categoryId;
-      task.due_date = dueDate;
-      task.notes = notes;
-      task.updated_at = new Date().toISOString();
-      await saveTaskToSupabase(task);
-    }
-    toast('Modifié');
-  } else {
-    const task = {
-      id: genId(),
-      title,
-      priority,
-      category_id: categoryId,
-      due_date: dueDate,
-      notes,
-      completed: false,
-      created_at: new Date().toISOString()
-    };
-    state.tasks.unshift(task);
-    await saveTaskToSupabase(task);
-    toast('Ajouté');
-  }
-  
-  saveLocal();
-  closeModal();
-  render();
-}
-
-async function deleteTask() {
-  if (!state.editingTask) return;
-  const id = state.editingTask.id;
-  state.tasks = state.tasks.filter(t => t.id !== id);
-  await deleteTaskFromSupabase(id);
-  saveLocal();
-  closeModal();
-  render();
-  toast('Supprimé');
-}
-
-// ===== CATEGORY ACTIONS =====
-function deleteCategory(id) {
-  if (state.categories.length <= 1) {
-    toast('Garde au moins une catégorie');
-    return;
-  }
-  
-  const cat = state.categories.find(c => c.id === id);
-  if (!confirm(`Supprimer "${cat?.name}" ?`)) return;
-  
-  state.categories = state.categories.filter(c => c.id !== id);
-  saveCategories();
-  render();
-  toast('Catégorie supprimée');
-}
-
-function saveCategory() {
-  const name = $('#category-name-input').value.trim();
-  if (!name) { toast('Ajoute un nom'); return; }
-  
-  const color = $('.color-option.selected')?.dataset.color || '#8b5cf6';
-  
-  state.categories.push({
-    id: 'cat_' + genId(),
-    name,
-    color
-  });
-  
-  saveCategories();
-  closeCategoryModal();
-  render();
-  toast('Catégorie ajoutée');
-}
-
-// ===== MODALS =====
-function openModal(task = null) {
-  state.editingTask = task;
-  $('#modal-title').textContent = task ? 'Modifier' : 'Nouvelle tâche';
-  $('#task-input').value = task?.title || '';
-  $('#task-notes').value = task?.notes || '';
-  $('#task-date').value = task?.due_date || task?.dueDate || '';
-  $('#delete-btn').style.display = task ? 'block' : 'none';
-  
-  $$('.chip[data-priority]').forEach(c => c.classList.toggle('selected', c.dataset.priority === (task?.priority || 'medium')));
-  renderCategoryChips();
-  if (task?.category_id || task?.categoryId) {
-    $$('.chip[data-category]').forEach(c => c.classList.toggle('selected', c.dataset.category === (task.category_id || task.categoryId)));
-  }
-  
-  $('#task-modal').classList.add('active');
-  setTimeout(() => $('#task-input').focus(), 300);
-}
-
-function closeModal() {
-  state.editingTask = null;
-  $('#task-modal').classList.remove('active');
-}
-
-function openCategoryModal() {
-  $('#category-name-input').value = '';
-  $$('.color-option').forEach(c => c.classList.remove('selected'));
-  $('.color-option').classList.add('selected');
-  $('#category-modal').classList.add('active');
-  setTimeout(() => $('#category-name-input').focus(), 300);
-}
-
-function closeCategoryModal() {
-  $('#category-modal').classList.remove('active');
-}
-
-function openSettings() {
-  $('#settings-panel').classList.add('open');
-  $('#settings-backdrop').classList.add('open');
-}
-
-function closeSettings() {
-  $('#settings-panel').classList.remove('open');
-  $('#settings-backdrop').classList.remove('open');
-}
-
-// ===== AUTH UI =====
-function showLoginForm() {
-  $('#login-form').style.display = 'block';
-  $('#signup-form').style.display = 'none';
-  $('#forgot-form').style.display = 'none';
-  $$('.auth-tab').forEach(t => t.classList.remove('active'));
-  $$('.auth-tab')[0].classList.add('active');
-  hideMessages();
-}
-
-function showSignupForm() {
-  $('#login-form').style.display = 'none';
-  $('#signup-form').style.display = 'block';
-  $('#forgot-form').style.display = 'none';
-  $$('.auth-tab').forEach(t => t.classList.remove('active'));
-  $$('.auth-tab')[1].classList.add('active');
-  hideMessages();
-}
-
-function showForgotForm() {
-  $('#login-form').style.display = 'none';
-  $('#signup-form').style.display = 'none';
-  $('#forgot-form').style.display = 'block';
-  $$('.auth-tab').forEach(t => t.classList.remove('active'));
-  hideMessages();
-}
-
-// ===== INIT =====
-async function init() {
-  applyTheme();
-  
-  const isLoggedIn = await checkAuth();
-  
-  if (!isLoggedIn && !state.isLocalMode) {
+    state.isLocalMode = false;
+    localStorage.removeItem('tf_tasks');
+    localStorage.removeItem('tf_local_mode');
+    updateUserUI();
+    closeSettings();
     showAuth();
   }
 
-  // Auth tabs
-  $$('.auth-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      if (tab.dataset.tab === 'login') showLoginForm();
-      else showSignupForm();
-    });
-  });
-
-  // Auth buttons
-  $('#login-btn').addEventListener('click', loginWithEmail);
-  $('#signup-btn').addEventListener('click', signupWithEmail);
-  $('#forgot-btn').addEventListener('click', forgotPassword);
-  $('#google-login').addEventListener('click', loginWithGoogle);
-  $('#skip-auth').addEventListener('click', continueWithoutAccount);
-  $('#forgot-password').addEventListener('click', showForgotForm);
-  $('#back-to-login').addEventListener('click', showLoginForm);
-
-  // Enter key for forms
-  $('#login-password').addEventListener('keypress', e => { if (e.key === 'Enter') loginWithEmail(); });
-  $('#signup-password').addEventListener('keypress', e => { if (e.key === 'Enter') signupWithEmail(); });
-  $('#forgot-email').addEventListener('keypress', e => { if (e.key === 'Enter') forgotPassword(); });
-
-  // Task modal
-  $('#fab').addEventListener('click', () => openModal());
-  $('#modal-close').addEventListener('click', closeModal);
-  $('#cancel-btn').addEventListener('click', closeModal);
-  $('#save-btn').addEventListener('click', saveTask);
-  $('#delete-btn').addEventListener('click', deleteTask);
-  $('#task-modal').addEventListener('click', e => { if (e.target.id === 'task-modal') closeModal(); });
-
-  // Category modal
-  $('#category-modal-close').addEventListener('click', closeCategoryModal);
-  $('#category-cancel-btn').addEventListener('click', closeCategoryModal);
-  $('#category-save-btn').addEventListener('click', saveCategory);
-  $('#category-modal').addEventListener('click', e => { if (e.target.id === 'category-modal') closeCategoryModal(); });
-  
-  $('#color-picker').addEventListener('click', e => {
-    const option = e.target.closest('.color-option');
-    if (option) {
-      $$('.color-option').forEach(c => c.classList.remove('selected'));
-      option.classList.add('selected');
-    }
-  });
-
-  // Priority chips
-  $$('.chip[data-priority]').forEach(c => c.addEventListener('click', () => {
-    $$('.chip[data-priority]').forEach(x => x.classList.remove('selected'));
-    c.classList.add('selected');
-  }));
-
-  // Category chips
-  $('#category-chips').addEventListener('click', e => {
-    const chip = e.target.closest('.chip');
-    if (chip) {
-      $$('.chip[data-category]').forEach(x => x.classList.remove('selected'));
-      chip.classList.add('selected');
-    }
-  });
-
-  // Navigation
-  $$('.nav-item').forEach(i => i.addEventListener('click', () => {
-    state.currentView = i.dataset.view;
-    state.currentFilter = 'all';
+  function continueWithoutAccount() {
+    state.isLocalMode = true;
+    localStorage.setItem('tf_local_mode', 'true');
+    state.tasks = JSON.parse(localStorage.getItem('tf_tasks') || '[]');
+    updateUserUI();
+    showApp();
     render();
-  }));
-  
-  $$('.stat-chip[data-filter]').forEach(c => c.addEventListener('click', () => {
-    state.currentFilter = c.dataset.filter;
-    render();
-  }));
-
-  // Settings
-  $('#user-avatar').addEventListener('click', openSettings);
-  $('#settings-close').addEventListener('click', closeSettings);
-  $('#settings-backdrop').addEventListener('click', closeSettings);
-  $('#theme-toggle').addEventListener('click', toggleTheme);
-  $('#logout-item').addEventListener('click', logout);
-
-  // Service worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(console.error);
+    toast('Mode local activé');
   }
-}
 
-init();
+  function updateUserUI() {
+    const avatar = $('#user-avatar');
+    const email = $('#settings-email');
+    const logoutItem = $('#logout-item');
+    
+    if (state.user) {
+      const avatarUrl = state.user.user_metadata?.avatar_url;
+      if (avatar) {
+        avatar.innerHTML = avatarUrl 
+          ? `<img src="${avatarUrl}" alt="">` 
+          : `<span>${(state.user.email?.[0] || '?').toUpperCase()}</span>`;
+      }
+      if (email) email.textContent = state.user.email || 'Connecté';
+      if (logoutItem) logoutItem.style.display = 'flex';
+    } else {
+      if (avatar) avatar.innerHTML = '<span>?</span>';
+      if (email) email.textContent = state.isLocalMode ? 'Mode local' : 'Non connecté';
+      if (logoutItem) logoutItem.style.display = state.isLocalMode ? 'flex' : 'none';
+    }
+  }
+
+  // ===== SUPABASE SYNC =====
+  async function loadFromSupabase() {
+    if (!state.user || !sb) return;
+    
+    try {
+      const { data, error } = await sb
+        .from('tasks')
+        .select('*')
+        .eq('user_id', state.user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      state.tasks = data || [];
+    } catch (e) {
+      console.error('Load error:', e);
+    }
+  }
+
+  async function saveTaskToSupabase(task) {
+    if (!state.user || state.isLocalMode || !sb) {
+      saveLocal();
+      return;
+    }
+    
+    try {
+      const taskData = {
+        id: task.id,
+        user_id: state.user.id,
+        title: task.title,
+        notes: task.notes || null,
+        priority: task.priority || 'medium',
+        category_id: task.category_id || null,
+        due_date: task.due_date || null,
+        completed: task.completed || false,
+        created_at: task.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { error } = await sb.from('tasks').upsert(taskData);
+      if (error) throw error;
+    } catch (e) {
+      console.error('Save error:', e);
+    }
+  }
+
+  async function deleteTaskFromSupabase(taskId) {
+    if (!state.user || state.isLocalMode || !sb) return;
+    try {
+      await sb.from('tasks').delete().eq('id', taskId);
+    } catch (e) {
+      console.error('Delete error:', e);
+    }
+  }
+
+  function saveLocal() {
+    try {
+      localStorage.setItem('tf_tasks', JSON.stringify(state.tasks));
+    } catch(e) { console.error(e); }
+  }
+
+  function saveCategories() {
+    try {
+      localStorage.setItem('tf_categories', JSON.stringify(state.categories));
+    } catch(e) { console.error(e); }
+  }
+
+  // ===== THEME =====
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', state.theme);
+    const toggle = $('#theme-toggle');
+    if (toggle) toggle.classList.toggle('active', state.theme === 'dark');
+  }
+
+  function toggleTheme() {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('tf_theme', state.theme);
+    applyTheme();
+  }
+
+  // ===== RENDER =====
+  function updateCounts() {
+    const active = state.tasks.filter(t => !t.completed);
+    const countAll = $('#count-all');
+    const countUrgent = $('#count-urgent');
+    const countMedium = $('#count-medium');
+    const countLow = $('#count-low');
+    const countDone = $('#count-done');
+    
+    if (countAll) countAll.textContent = active.length;
+    if (countUrgent) countUrgent.textContent = active.filter(t => getPriority(t) === 'high').length;
+    if (countMedium) countMedium.textContent = active.filter(t => getPriority(t) === 'medium').length;
+    if (countLow) countLow.textContent = active.filter(t => getPriority(t) === 'low').length;
+    if (countDone) countDone.textContent = state.tasks.filter(t => t.completed).length;
+  }
+
+  function renderTasks() {
+    const main = $('#main');
+    if (!main) return;
+    
+    let tasks = [...state.tasks];
+
+    // Filter by view
+    if (state.currentView === 'today') {
+      const today = new Date().toISOString().split('T')[0];
+      tasks = tasks.filter(t => {
+        if (t.completed) return false;
+        const due = t.due_date || t.dueDate;
+        return due === today || getEffectivePriority(t) === 'high' || !due;
+      });
+    } else if (state.currentView === 'all') {
+      tasks = tasks.filter(t => !t.completed);
+    } else if (state.currentView === 'archive') {
+      tasks = tasks.filter(t => t.completed);
+    } else if (state.currentView === 'categories') {
+      renderCategories();
+      return;
+    }
+
+    // Filter by priority
+    if (state.currentFilter === 'high') {
+      tasks = tasks.filter(t => getPriority(t) === 'high' && !t.completed);
+    } else if (state.currentFilter === 'medium') {
+      tasks = tasks.filter(t => getPriority(t) === 'medium' && !t.completed);
+    } else if (state.currentFilter === 'low') {
+      tasks = tasks.filter(t => getPriority(t) === 'low' && !t.completed);
+    } else if (state.currentFilter === 'done') {
+      tasks = state.tasks.filter(t => t.completed);
+    }
+
+    tasks = sortTasks(tasks);
+
+    if (!tasks.length) {
+      const messages = {
+        all: { title: 'Tout est fait !', sub: 'Ajoute une tâche avec le bouton +' },
+        high: { title: 'Aucune tâche urgente', sub: 'Profite du calme 😎' },
+        medium: { title: 'Aucune tâche importante', sub: 'Tout roule !' },
+        low: { title: 'Aucune tâche chill', sub: 'Ajoutes-en une !' },
+        done: { title: 'Aucune tâche terminée', sub: 'Commence par en finir une !' }
+      };
+      const msg = messages[state.currentFilter] || messages.all;
+      main.innerHTML = `<div class="empty-state"><h3>${msg.title}</h3><p>${msg.sub}</p></div>`;
+      return;
+    }
+
+    main.innerHTML = `<div class="section"><div class="task-list">${tasks.map(t => {
+      const p = getEffectivePriority(t);
+      const due = t.due_date || t.dueDate;
+      const days = getDaysUntil(due);
+      const cat = state.categories.find(c => c.id === (t.category_id || t.categoryId));
+      let dc = '';
+      if (days !== null && days <= 1) dc = 'urgent';
+      return `<div class="task-item ${t.completed?'completed':''}" data-id="${t.id}">
+        <div class="task-checkbox priority-${p} ${t.completed?'checked':''}" data-id="${t.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="task-content" data-id="${t.id}">
+          <div class="task-title">${t.title || 'Sans titre'}</div>
+          <div class="task-meta">
+            ${cat ? `<span class="task-tag" style="border-left:3px solid ${cat.color};padding-left:8px">${cat.name}</span>` : ''}
+            ${due ? `<span class="task-tag ${dc}">${formatDate(due)}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('')}</div></div>`;
+
+    attachTaskListeners();
+  }
+
+  function renderCategories() {
+    const main = $('#main');
+    if (!main) return;
+    
+    main.innerHTML = `
+      <div class="section">
+        <div class="section-title">Mes catégories</div>
+        ${state.categories.map(cat => {
+          const count = state.tasks.filter(t => (t.category_id || t.categoryId) === cat.id && !t.completed).length;
+          return `<div class="category-item" data-id="${cat.id}">
+            <div class="dot" style="background:${cat.color}"></div>
+            <div class="name">${cat.name}</div>
+            <div class="count">${count} tâche${count !== 1 ? 's' : ''}</div>
+            <button class="delete-btn" data-id="${cat.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>`;
+        }).join('')}
+        <button class="btn btn-secondary" id="add-category-btn" style="margin-top:16px;width:100%">
+          + Ajouter une catégorie
+        </button>
+      </div>
+    `;
+    
+    $$('.category-item .delete-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        deleteCategory(btn.dataset.id);
+      };
+    });
+    
+    const addBtn = $('#add-category-btn');
+    if (addBtn) addBtn.onclick = openCategoryModal;
+  }
+
+  function renderCategoryChips() {
+    const container = $('#category-chips');
+    if (!container) return;
+    
+    const selected = state.editingTask?.category_id || state.editingTask?.categoryId || state.categories[0]?.id;
+    container.innerHTML = state.categories.map(cat => 
+      `<div class="chip ${cat.id === selected ? 'selected' : ''}" data-category="${cat.id}"><div class="dot" style="background:${cat.color}"></div>${cat.name}</div>`
+    ).join('');
+  }
+
+  function render() {
+    updateCounts();
+    renderTasks();
+    updateNav();
+    const dateEl = $('#header-date');
+    if (dateEl) {
+      const now = new Date();
+      dateEl.textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+  }
+
+  function updateNav() {
+    $$('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.view === state.currentView));
+    $$('.stat-chip[data-filter]').forEach(c => c.classList.toggle('active', c.dataset.filter === state.currentFilter));
+    
+    const statsRow = $('#stats-row');
+    if (statsRow) statsRow.classList.toggle('hidden', state.currentView === 'categories');
+    
+    const titles = { today: "Aujourd'hui", all: 'Toutes les tâches', categories: 'Catégories', archive: 'Archives' };
+    const titleEl = $('#page-title');
+    if (titleEl) titleEl.textContent = titles[state.currentView] || "Aujourd'hui";
+  }
+
+  function attachTaskListeners() {
+    $$('.task-checkbox').forEach(el => {
+      el.onclick = (e) => {
+        e.stopPropagation();
+        completeTask(el.dataset.id);
+      };
+    });
+    $$('.task-content').forEach(el => {
+      el.onclick = () => {
+        const task = state.tasks.find(t => t.id === el.dataset.id);
+        if (task) openModal(task);
+      };
+    });
+  }
+
+  // ===== TASK ACTIONS =====
+  async function completeTask(id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (!task) return;
+    task.completed = !task.completed;
+    task.updated_at = new Date().toISOString();
+    await saveTaskToSupabase(task);
+    saveLocal();
+    render();
+    if (task.completed) toast('Bien joué ! 🎉');
+  }
+
+  async function saveTask() {
+    const titleEl = $('#task-input');
+    const title = titleEl?.value?.trim();
+    if (!title) { toast('Ajoute un titre'); return; }
+    
+    const priorityEl = $('.chip[data-priority].selected');
+    const categoryEl = $('.chip[data-category].selected');
+    const dateEl = $('#task-date');
+    const notesEl = $('#task-notes');
+    
+    const priority = priorityEl?.dataset?.priority || 'medium';
+    const categoryId = categoryEl?.dataset?.category || state.categories[0]?.id;
+    const dueDate = dateEl?.value || null;
+    const notes = notesEl?.value?.trim() || '';
+
+    if (state.editingTask) {
+      const task = state.tasks.find(t => t.id === state.editingTask.id);
+      if (task) {
+        task.title = title;
+        task.priority = priority;
+        task.category_id = categoryId;
+        task.due_date = dueDate;
+        task.notes = notes;
+        task.updated_at = new Date().toISOString();
+        await saveTaskToSupabase(task);
+      }
+      toast('Modifié');
+    } else {
+      const task = {
+        id: genId(),
+        title,
+        priority,
+        category_id: categoryId,
+        due_date: dueDate,
+        notes,
+        completed: false,
+        created_at: new Date().toISOString()
+      };
+      state.tasks.unshift(task);
+      await saveTaskToSupabase(task);
+      toast('Ajouté');
+    }
+    
+    saveLocal();
+    closeModal();
+    render();
+  }
+
+  async function deleteTask() {
+    if (!state.editingTask) return;
+    const id = state.editingTask.id;
+    state.tasks = state.tasks.filter(t => t.id !== id);
+    await deleteTaskFromSupabase(id);
+    saveLocal();
+    closeModal();
+    render();
+    toast('Supprimé');
+  }
+
+  // ===== CATEGORY ACTIONS =====
+  function deleteCategory(id) {
+    if (state.categories.length <= 1) {
+      toast('Garde au moins une catégorie');
+      return;
+    }
+    
+    const cat = state.categories.find(c => c.id === id);
+    if (!confirm(`Supprimer "${cat?.name}" ?`)) return;
+    
+    state.categories = state.categories.filter(c => c.id !== id);
+    saveCategories();
+    render();
+    toast('Catégorie supprimée');
+  }
+
+  function saveCategory() {
+    const nameEl = $('#category-name-input');
+    const name = nameEl?.value?.trim();
+    if (!name) { toast('Ajoute un nom'); return; }
+    
+    const colorEl = $('.color-option.selected');
+    const color = colorEl?.dataset?.color || '#8b5cf6';
+    
+    state.categories.push({
+      id: 'cat_' + genId(),
+      name,
+      color
+    });
+    
+    saveCategories();
+    closeCategoryModal();
+    render();
+    toast('Catégorie ajoutée');
+  }
+
+  // ===== MODALS =====
+  function openModal(task) {
+    state.editingTask = task || null;
+    
+    const titleEl = $('#modal-title');
+    const inputEl = $('#task-input');
+    const notesEl = $('#task-notes');
+    const dateEl = $('#task-date');
+    const deleteBtn = $('#delete-btn');
+    
+    if (titleEl) titleEl.textContent = task ? 'Modifier' : 'Nouvelle tâche';
+    if (inputEl) inputEl.value = task?.title || '';
+    if (notesEl) notesEl.value = task?.notes || '';
+    if (dateEl) dateEl.value = task?.due_date || task?.dueDate || '';
+    if (deleteBtn) deleteBtn.style.display = task ? 'block' : 'none';
+    
+    $$('.chip[data-priority]').forEach(c => c.classList.toggle('selected', c.dataset.priority === (task?.priority || 'medium')));
+    renderCategoryChips();
+    if (task?.category_id || task?.categoryId) {
+      $$('.chip[data-category]').forEach(c => c.classList.toggle('selected', c.dataset.category === (task.category_id || task.categoryId)));
+    }
+    
+    const modal = $('#task-modal');
+    if (modal) modal.classList.add('active');
+    setTimeout(() => inputEl?.focus(), 300);
+  }
+
+  function closeModal() {
+    state.editingTask = null;
+    const modal = $('#task-modal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function openCategoryModal() {
+    const nameEl = $('#category-name-input');
+    if (nameEl) nameEl.value = '';
+    $$('.color-option').forEach(c => c.classList.remove('selected'));
+    const firstColor = $('.color-option');
+    if (firstColor) firstColor.classList.add('selected');
+    const modal = $('#category-modal');
+    if (modal) modal.classList.add('active');
+    setTimeout(() => nameEl?.focus(), 300);
+  }
+
+  function closeCategoryModal() {
+    const modal = $('#category-modal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function openSettings() {
+    const panel = $('#settings-panel');
+    const backdrop = $('#settings-backdrop');
+    if (panel) panel.classList.add('open');
+    if (backdrop) backdrop.classList.add('open');
+  }
+
+  function closeSettings() {
+    const panel = $('#settings-panel');
+    const backdrop = $('#settings-backdrop');
+    if (panel) panel.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+  }
+
+  // ===== AUTH UI =====
+  function showLoginForm() {
+    const login = $('#login-form');
+    const signup = $('#signup-form');
+    const forgot = $('#forgot-form');
+    const tabLogin = $('#tab-login');
+    const tabSignup = $('#tab-signup');
+    
+    if (login) login.style.display = 'block';
+    if (signup) signup.style.display = 'none';
+    if (forgot) forgot.style.display = 'none';
+    if (tabLogin) tabLogin.classList.add('active');
+    if (tabSignup) tabSignup.classList.remove('active');
+    hideMessages();
+  }
+
+  function showSignupForm() {
+    const login = $('#login-form');
+    const signup = $('#signup-form');
+    const forgot = $('#forgot-form');
+    const tabLogin = $('#tab-login');
+    const tabSignup = $('#tab-signup');
+    
+    if (login) login.style.display = 'none';
+    if (signup) signup.style.display = 'block';
+    if (forgot) forgot.style.display = 'none';
+    if (tabLogin) tabLogin.classList.remove('active');
+    if (tabSignup) tabSignup.classList.add('active');
+    hideMessages();
+  }
+
+  function showForgotForm() {
+    const login = $('#login-form');
+    const signup = $('#signup-form');
+    const forgot = $('#forgot-form');
+    const tabLogin = $('#tab-login');
+    const tabSignup = $('#tab-signup');
+    
+    if (login) login.style.display = 'none';
+    if (signup) signup.style.display = 'none';
+    if (forgot) forgot.style.display = 'block';
+    if (tabLogin) tabLogin.classList.remove('active');
+    if (tabSignup) tabSignup.classList.remove('active');
+    hideMessages();
+  }
+
+  // ===== INIT =====
+  function init() {
+    applyTheme();
+    setupAuthListener();
+    
+    // Auth tabs
+    const tabLogin = $('#tab-login');
+    const tabSignup = $('#tab-signup');
+    if (tabLogin) tabLogin.onclick = showLoginForm;
+    if (tabSignup) tabSignup.onclick = showSignupForm;
+
+    // Auth buttons
+    const loginBtn = $('#login-btn');
+    const signupBtn = $('#signup-btn');
+    const forgotBtn = $('#forgot-btn');
+    const googleBtn = $('#google-login');
+    const skipBtn = $('#skip-auth');
+    const forgotLink = $('#forgot-password');
+    const backLink = $('#back-to-login');
+    
+    if (loginBtn) loginBtn.onclick = loginWithEmail;
+    if (signupBtn) signupBtn.onclick = signupWithEmail;
+    if (forgotBtn) forgotBtn.onclick = forgotPassword;
+    if (googleBtn) googleBtn.onclick = loginWithGoogle;
+    if (skipBtn) skipBtn.onclick = continueWithoutAccount;
+    if (forgotLink) forgotLink.onclick = showForgotForm;
+    if (backLink) backLink.onclick = showLoginForm;
+
+    // Enter key for forms
+    const loginPass = $('#login-password');
+    const signupPass = $('#signup-password');
+    const forgotEmail = $('#forgot-email');
+    
+    if (loginPass) loginPass.onkeypress = e => { if (e.key === 'Enter') loginWithEmail(); };
+    if (signupPass) signupPass.onkeypress = e => { if (e.key === 'Enter') signupWithEmail(); };
+    if (forgotEmail) forgotEmail.onkeypress = e => { if (e.key === 'Enter') forgotPassword(); };
+
+    // Task modal
+    const fab = $('#fab');
+    const modalClose = $('#modal-close');
+    const cancelBtn = $('#cancel-btn');
+    const saveBtn = $('#save-btn');
+    const deleteBtn = $('#delete-btn');
+    const taskModal = $('#task-modal');
+    
+    if (fab) fab.onclick = () => openModal(null);
+    if (modalClose) modalClose.onclick = closeModal;
+    if (cancelBtn) cancelBtn.onclick = closeModal;
+    if (saveBtn) saveBtn.onclick = saveTask;
+    if (deleteBtn) deleteBtn.onclick = deleteTask;
+    if (taskModal) taskModal.onclick = e => { if (e.target.id === 'task-modal') closeModal(); };
+
+    // Category modal
+    const catClose = $('#category-modal-close');
+    const catCancel = $('#category-cancel-btn');
+    const catSave = $('#category-save-btn');
+    const catModal = $('#category-modal');
+    
+    if (catClose) catClose.onclick = closeCategoryModal;
+    if (catCancel) catCancel.onclick = closeCategoryModal;
+    if (catSave) catSave.onclick = saveCategory;
+    if (catModal) catModal.onclick = e => { if (e.target.id === 'category-modal') closeCategoryModal(); };
+    
+    const colorPicker = $('#color-picker');
+    if (colorPicker) {
+      colorPicker.onclick = e => {
+        const option = e.target.closest('.color-option');
+        if (option) {
+          $$('.color-option').forEach(c => c.classList.remove('selected'));
+          option.classList.add('selected');
+        }
+      };
+    }
+
+    // Priority chips
+    $$('.chip[data-priority]').forEach(c => {
+      c.onclick = () => {
+        $$('.chip[data-priority]').forEach(x => x.classList.remove('selected'));
+        c.classList.add('selected');
+      };
+    });
+
+    // Category chips
+    const catChips = $('#category-chips');
+    if (catChips) {
+      catChips.onclick = e => {
+        const chip = e.target.closest('.chip');
+        if (chip) {
+          $$('.chip[data-category]').forEach(x => x.classList.remove('selected'));
+          chip.classList.add('selected');
+        }
+      };
+    }
+
+    // Navigation
+    $$('.nav-item').forEach(i => {
+      i.onclick = () => {
+        state.currentView = i.dataset.view;
+        state.currentFilter = 'all';
+        render();
+      };
+    });
+    
+    $$('.stat-chip[data-filter]').forEach(c => {
+      c.onclick = () => {
+        state.currentFilter = c.dataset.filter;
+        render();
+      };
+    });
+
+    // Settings
+    const avatar = $('#user-avatar');
+    const settingsClose = $('#settings-close');
+    const settingsBackdrop = $('#settings-backdrop');
+    const themeToggle = $('#theme-toggle');
+    const logoutItem = $('#logout-item');
+    
+    if (avatar) avatar.onclick = openSettings;
+    if (settingsClose) settingsClose.onclick = closeSettings;
+    if (settingsBackdrop) settingsBackdrop.onclick = closeSettings;
+    if (themeToggle) themeToggle.onclick = toggleTheme;
+    if (logoutItem) logoutItem.onclick = logout;
+
+    // Check auth and show appropriate screen
+    checkAuth().then(isLoggedIn => {
+      if (!isLoggedIn && !state.isLocalMode) {
+        showAuth();
+      }
+    });
+
+    // Service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  }
+
+  // Start when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
 </script>
 </body>
 </html>
