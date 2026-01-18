@@ -252,14 +252,25 @@
   var editingTask = null;
   var theme = localStorage.getItem('tf_theme') || 'dark';
   var isLocalMode = localStorage.getItem('tf_local_mode') === 'true';
+  var authHandled = false;
 
   var $ = function(id){return document.getElementById(id);};
   var $q = function(s){return document.querySelector(s);};
   var $qa = function(s){return document.querySelectorAll(s);};
 
   function hideLoading(){$('loading-screen').classList.add('hidden');}
-  function showApp(){$('auth-screen').classList.add('hidden');$('app').style.display='flex';hideLoading();}
-  function showAuth(){$('auth-screen').classList.remove('hidden');$('app').style.display='none';hideLoading();}
+  function showApp(){
+    console.log('showApp called');
+    $('auth-screen').classList.add('hidden');
+    $('app').style.display='flex';
+    hideLoading();
+  }
+  function showAuth(){
+    console.log('showAuth called');
+    $('auth-screen').classList.remove('hidden');
+    $('app').style.display='none';
+    hideLoading();
+  }
   function toast(m){var e=$('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2500);}
   function showError(m){$('auth-error').textContent=m;$('auth-error').style.display='block';$('auth-success').style.display='none';}
   function showSuccess(m){$('auth-success').textContent=m;$('auth-success').style.display='block';$('auth-error').style.display='none';}
@@ -274,41 +285,75 @@
   function applyTheme(){document.documentElement.setAttribute('data-theme',theme);$('theme-toggle').classList.toggle('active',theme==='dark');}
   function toggleTheme(){theme=theme==='dark'?'light':'dark';localStorage.setItem('tf_theme',theme);applyTheme();}
 
-  async function initAuth(){
-    var result=await db.auth.getSession();
-    if(result.data.session&&result.data.session.user){
-      currentUser=result.data.session.user;
-      await loadTasks();
+  // Unified function to handle successful auth
+  function handleAuthSuccess(user) {
+    console.log('handleAuthSuccess called', user ? user.email : 'no user');
+    if (authHandled) {
+      console.log('Auth already handled, skipping');
+      return;
+    }
+    authHandled = true;
+    currentUser = user;
+    
+    // Load tasks with error handling
+    loadTasks().then(function() {
+      console.log('Tasks loaded, showing app');
       updateUserUI();
       showApp();
       render();
-      return;
-    }
-    if(isLocalMode){
-      tasks=JSON.parse(localStorage.getItem('tf_tasks')||'[]');
+    }).catch(function(err) {
+      console.error('Error loading tasks:', err);
+      // Show app anyway even if tasks fail to load
       updateUserUI();
       showApp();
       render();
-      return;
-    }
-    showAuth();
+    });
   }
 
-  db.auth.onAuthStateChange(async function(event,session){
-    console.log('Auth:',event);
-    if(event==='SIGNED_IN'&&session&&session.user){
-      currentUser=session.user;
-      isLocalMode=false;
+  // Check session on load
+  function initAuth() {
+    console.log('initAuth starting');
+    
+    db.auth.getSession().then(function(result) {
+      console.log('getSession result:', result.data.session ? 'has session' : 'no session');
+      
+      if (result.data.session && result.data.session.user) {
+        handleAuthSuccess(result.data.session.user);
+        return;
+      }
+      
+      if (isLocalMode) {
+        console.log('Local mode active');
+        authHandled = true;
+        tasks = JSON.parse(localStorage.getItem('tf_tasks') || '[]');
+        updateUserUI();
+        showApp();
+        render();
+        return;
+      }
+      
+      console.log('No session, showing auth');
+      showAuth();
+    }).catch(function(err) {
+      console.error('getSession error:', err);
+      showAuth();
+    });
+  }
+
+  // Listen for auth changes (for new logins)
+  db.auth.onAuthStateChange(function(event, session) {
+    console.log('Auth event:', event);
+    
+    if (event === 'SIGNED_IN' && session && session.user && !authHandled) {
+      isLocalMode = false;
       localStorage.removeItem('tf_local_mode');
-      await loadTasks();
-      updateUserUI();
-      showApp();
-      render();
+      handleAuthSuccess(session.user);
       toast('Connecté !');
-    }else if(event==='SIGNED_OUT'){
-      currentUser=null;
-      tasks=[];
-      if(!isLocalMode)showAuth();
+    } else if (event === 'SIGNED_OUT') {
+      authHandled = false;
+      currentUser = null;
+      tasks = [];
+      if (!isLocalMode) showAuth();
     }
   });
 
@@ -317,6 +362,7 @@
     var pw=$('login-password').value;
     if(!email||!pw){showError('Remplis tous les champs');return;}
     hideMessages();
+    authHandled = false; // Reset to allow new auth
     var r=await db.auth.signInWithPassword({email:email,password:pw});
     if(r.error)showError(r.error.message.indexOf('Invalid')>=0?'Email ou mot de passe incorrect':r.error.message);
   }
@@ -345,6 +391,7 @@
 
   async function logout(){
     await db.auth.signOut();
+    authHandled = false;
     currentUser=null;tasks=[];isLocalMode=false;
     localStorage.removeItem('tf_tasks');localStorage.removeItem('tf_local_mode');
     updateUserUI();closeSettings();showAuth();
@@ -352,6 +399,7 @@
 
   function continueWithoutAccount(){
     isLocalMode=true;
+    authHandled=true;
     localStorage.setItem('tf_local_mode','true');
     tasks=JSON.parse(localStorage.getItem('tf_tasks')||'[]');
     updateUserUI();showApp();render();toast('Mode local activé');
@@ -371,10 +419,24 @@
     }
   }
 
-  async function loadTasks(){
-    if(!currentUser)return;
-    var r=await db.from('tasks').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
-    if(!r.error)tasks=r.data||[];
+  function loadTasks(){
+    return new Promise(function(resolve, reject) {
+      if(!currentUser) {
+        resolve();
+        return;
+      }
+      console.log('Loading tasks for user:', currentUser.id);
+      db.from('tasks').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false})
+        .then(function(r) {
+          console.log('Tasks query result:', r.error ? r.error : (r.data ? r.data.length + ' tasks' : 'no data'));
+          if(!r.error) tasks = r.data || [];
+          resolve();
+        })
+        .catch(function(err) {
+          console.error('Tasks query error:', err);
+          reject(err);
+        });
+    });
   }
 
   async function saveTask(t){
