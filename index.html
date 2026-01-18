@@ -132,9 +132,7 @@
   </style>
 </head>
 <body>
-  <div class="loading-screen" id="loading-screen">
-    <div class="loader"></div>
-  </div>
+  <div class="loading-screen" id="loading-screen"><div class="loader"></div></div>
 
   <div class="auth-screen hidden" id="auth-screen">
     <svg class="auth-logo" viewBox="0 0 80 80" fill="none">
@@ -145,53 +143,35 @@
     </svg>
     <h1 class="auth-title">TaskFlow</h1>
     <p class="auth-subtitle">Organise ta vie simplement. Synchronisé sur tous tes appareils.</p>
-    
     <div class="auth-form">
       <div class="auth-tabs">
         <button class="auth-tab active" id="tab-login">Connexion</button>
         <button class="auth-tab" id="tab-signup">Inscription</button>
       </div>
-      
       <div id="auth-error" class="auth-error"></div>
       <div id="auth-success" class="auth-success"></div>
-      
       <div id="login-form">
-        <div class="form-group">
-          <input type="email" class="form-input" id="login-email" placeholder="Email" autocomplete="email">
-        </div>
-        <div class="form-group">
-          <input type="password" class="form-input" id="login-password" placeholder="Mot de passe" autocomplete="current-password">
-        </div>
+        <div class="form-group"><input type="email" class="form-input" id="login-email" placeholder="Email" autocomplete="email"></div>
+        <div class="form-group"><input type="password" class="form-input" id="login-password" placeholder="Mot de passe" autocomplete="current-password"></div>
         <button class="btn btn-primary" id="login-btn" style="width:100%">Se connecter</button>
         <div class="auth-link" id="forgot-password">Mot de passe oublié ?</div>
       </div>
-      
       <div id="signup-form" style="display:none">
-        <div class="form-group">
-          <input type="email" class="form-input" id="signup-email" placeholder="Email" autocomplete="email">
-        </div>
-        <div class="form-group">
-          <input type="password" class="form-input" id="signup-password" placeholder="Mot de passe (min. 6 caractères)" autocomplete="new-password">
-        </div>
+        <div class="form-group"><input type="email" class="form-input" id="signup-email" placeholder="Email" autocomplete="email"></div>
+        <div class="form-group"><input type="password" class="form-input" id="signup-password" placeholder="Mot de passe (min. 6 caractères)" autocomplete="new-password"></div>
         <button class="btn btn-primary" id="signup-btn" style="width:100%">Créer un compte</button>
       </div>
-      
       <div id="forgot-form" style="display:none">
         <p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px">Entre ton email pour recevoir un lien de réinitialisation</p>
-        <div class="form-group">
-          <input type="email" class="form-input" id="forgot-email" placeholder="Email" autocomplete="email">
-        </div>
+        <div class="form-group"><input type="email" class="form-input" id="forgot-email" placeholder="Email" autocomplete="email"></div>
         <button class="btn btn-primary" id="forgot-btn" style="width:100%">Envoyer le lien</button>
         <div class="auth-link" id="back-to-login">← Retour à la connexion</div>
       </div>
-      
       <div class="auth-divider">ou</div>
-      
       <button class="btn btn-google" id="google-login" style="width:100%">
         <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
         Continuer avec Google
       </button>
-      
       <div class="auth-link" id="skip-auth" style="margin-top:24px;color:var(--text-muted)">Continuer sans compte</div>
     </div>
   </div>
@@ -199,10 +179,7 @@
   <div class="app" id="app" style="display:none">
     <header class="header">
       <div class="header-top">
-        <div>
-          <h1 id="page-title">Aujourd'hui</h1>
-          <div class="header-date" id="header-date"></div>
-        </div>
+        <div><h1 id="page-title">Aujourd'hui</h1><div class="header-date" id="header-date"></div></div>
         <div class="user-avatar" id="user-avatar"><span>?</span></div>
       </div>
     </header>
@@ -226,39 +203,14 @@
   <div class="modal-overlay" id="task-modal">
     <div class="modal">
       <div class="modal-handle"></div>
-      <div class="modal-header">
-        <h2 class="modal-title" id="modal-title">Nouvelle tâche</h2>
-        <button class="modal-close" id="modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      </div>
+      <div class="modal-header"><h2 class="modal-title" id="modal-title">Nouvelle tâche</h2><button class="modal-close" id="modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
       <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Tâche</label>
-          <input type="text" class="form-input" id="task-input" placeholder="Qu'est-ce que tu dois faire ?" autocomplete="off">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Notes</label>
-          <textarea class="form-input" id="task-notes" placeholder="Ajoute des détails (optionnel)"></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Priorité</label>
-          <div class="chips-row" id="priority-chips">
-            <div class="chip priority-high" data-priority="high"><div class="dot"></div>Urgent</div>
-            <div class="chip priority-medium selected" data-priority="medium"><div class="dot"></div>Important</div>
-            <div class="chip priority-low" data-priority="low"><div class="dot"></div>Chill</div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Catégorie</label>
-          <div class="chips-row" id="category-chips"></div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Échéance</label>
-          <input type="date" class="form-input" id="task-date">
-        </div>
-        <div class="action-row">
-          <button class="btn btn-secondary" id="cancel-btn">Annuler</button>
-          <button class="btn btn-primary" id="save-btn">Enregistrer</button>
-        </div>
+        <div class="form-group"><label class="form-label">Tâche</label><input type="text" class="form-input" id="task-input" placeholder="Qu'est-ce que tu dois faire ?" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="task-notes" placeholder="Ajoute des détails (optionnel)"></textarea></div>
+        <div class="form-group"><label class="form-label">Priorité</label><div class="chips-row" id="priority-chips"><div class="chip priority-high" data-priority="high"><div class="dot"></div>Urgent</div><div class="chip priority-medium selected" data-priority="medium"><div class="dot"></div>Important</div><div class="chip priority-low" data-priority="low"><div class="dot"></div>Chill</div></div></div>
+        <div class="form-group"><label class="form-label">Catégorie</label><div class="chips-row" id="category-chips"></div></div>
+        <div class="form-group"><label class="form-label">Échéance</label><input type="date" class="form-input" id="task-date"></div>
+        <div class="action-row"><button class="btn btn-secondary" id="cancel-btn">Annuler</button><button class="btn btn-primary" id="save-btn">Enregistrer</button></div>
         <button class="btn btn-danger" id="delete-btn" style="display:none;">Supprimer</button>
       </div>
     </div>
@@ -267,754 +219,283 @@
   <div class="modal-overlay" id="category-modal">
     <div class="modal">
       <div class="modal-handle"></div>
-      <div class="modal-header">
-        <h2 class="modal-title">Nouvelle catégorie</h2>
-        <button class="modal-close" id="category-modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      </div>
+      <div class="modal-header"><h2 class="modal-title">Nouvelle catégorie</h2><button class="modal-close" id="category-modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
       <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Nom</label>
-          <input type="text" class="form-input" id="category-name-input" placeholder="Ex: Travail, Maison..." autocomplete="off">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Couleur</label>
-          <div class="color-picker" id="color-picker">
-            <div class="color-option selected" data-color="#8b5cf6" style="background:#8b5cf6"></div>
-            <div class="color-option" data-color="#ec4899" style="background:#ec4899"></div>
-            <div class="color-option" data-color="#ef4444" style="background:#ef4444"></div>
-            <div class="color-option" data-color="#f97316" style="background:#f97316"></div>
-            <div class="color-option" data-color="#eab308" style="background:#eab308"></div>
-            <div class="color-option" data-color="#22c55e" style="background:#22c55e"></div>
-            <div class="color-option" data-color="#06b6d4" style="background:#06b6d4"></div>
-            <div class="color-option" data-color="#3b82f6" style="background:#3b82f6"></div>
-          </div>
-        </div>
-        <div class="action-row">
-          <button class="btn btn-secondary" id="category-cancel-btn">Annuler</button>
-          <button class="btn btn-primary" id="category-save-btn">Ajouter</button>
-        </div>
+        <div class="form-group"><label class="form-label">Nom</label><input type="text" class="form-input" id="category-name-input" placeholder="Ex: Travail, Maison..." autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">Couleur</label><div class="color-picker" id="color-picker"><div class="color-option selected" data-color="#8b5cf6" style="background:#8b5cf6"></div><div class="color-option" data-color="#ec4899" style="background:#ec4899"></div><div class="color-option" data-color="#ef4444" style="background:#ef4444"></div><div class="color-option" data-color="#f97316" style="background:#f97316"></div><div class="color-option" data-color="#eab308" style="background:#eab308"></div><div class="color-option" data-color="#22c55e" style="background:#22c55e"></div><div class="color-option" data-color="#06b6d4" style="background:#06b6d4"></div><div class="color-option" data-color="#3b82f6" style="background:#3b82f6"></div></div></div>
+        <div class="action-row"><button class="btn btn-secondary" id="category-cancel-btn">Annuler</button><button class="btn btn-primary" id="category-save-btn">Ajouter</button></div>
       </div>
     </div>
   </div>
 
   <div class="settings-backdrop" id="settings-backdrop"></div>
   <div class="settings-panel" id="settings-panel">
-    <div class="settings-header">
-      <h2 class="settings-title">Paramètres</h2>
-      <button class="modal-close" id="settings-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">Compte</div>
-      <div class="settings-item"><span class="settings-item-label">Email</span><span class="settings-item-value" id="settings-email">Non connecté</span></div>
-      <div class="settings-item" id="logout-item" style="display:none"><span class="settings-item-label" style="color:var(--red)">Déconnexion</span></div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">Apparence</div>
-      <div class="settings-item"><span class="settings-item-label">Mode sombre</span><div class="toggle active" id="theme-toggle"></div></div>
-    </div>
+    <div class="settings-header"><h2 class="settings-title">Paramètres</h2><button class="modal-close" id="settings-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="settings-section"><div class="settings-section-title">Compte</div><div class="settings-item"><span class="settings-item-label">Email</span><span class="settings-item-value" id="settings-email">Non connecté</span></div><div class="settings-item" id="logout-item" style="display:none"><span class="settings-item-label" style="color:var(--red)">Déconnexion</span></div></div>
+    <div class="settings-section"><div class="settings-section-title">Apparence</div><div class="settings-item"><span class="settings-item-label">Mode sombre</span><div class="toggle active" id="theme-toggle"></div></div></div>
   </div>
 
   <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://qyrsuywefwaqxrhgyitj.sb.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8';
+(function(){
+  var db = window.supabase.createClient(
+    'https://qyrsuywefwaqxrhgyitj.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8'
+  );
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  var currentUser = null;
+  var tasks = [];
+  var categories = JSON.parse(localStorage.getItem('tf_categories')) || [{id:'cat_todo',name:'À faire',color:'#8b5cf6'},{id:'cat_shopping',name:'À acheter',color:'#ec4899'}];
+  var currentView = 'today';
+  var currentFilter = 'all';
+  var editingTask = null;
+  var theme = localStorage.getItem('tf_theme') || 'dark';
+  var isLocalMode = localStorage.getItem('tf_local_mode') === 'true';
 
-// State
-let currentUser = null;
-let tasks = [];
-let categories = JSON.parse(localStorage.getItem('tf_categories')) || [
-  { id: 'cat_todo', name: 'À faire', color: '#8b5cf6' },
-  { id: 'cat_shopping', name: 'À acheter', color: '#ec4899' }
-];
-let currentView = 'today';
-let currentFilter = 'all';
-let editingTask = null;
-let theme = localStorage.getItem('tf_theme') || 'dark';
-let isLocalMode = localStorage.getItem('tf_local_mode') === 'true';
+  var $ = function(id){return document.getElementById(id);};
+  var $q = function(s){return document.querySelector(s);};
+  var $qa = function(s){return document.querySelectorAll(s);};
 
-// DOM
-const $ = id => document.getElementById(id);
-const $q = sel => document.querySelector(sel);
-const $qa = sel => document.querySelectorAll(sel);
+  function hideLoading(){$('loading-screen').classList.add('hidden');}
+  function showApp(){$('auth-screen').classList.add('hidden');$('app').style.display='flex';hideLoading();}
+  function showAuth(){$('auth-screen').classList.remove('hidden');$('app').style.display='none';hideLoading();}
+  function toast(m){var e=$('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2500);}
+  function showError(m){$('auth-error').textContent=m;$('auth-error').style.display='block';$('auth-success').style.display='none';}
+  function showSuccess(m){$('auth-success').textContent=m;$('auth-success').style.display='block';$('auth-error').style.display='none';}
+  function hideMessages(){$('auth-error').style.display='none';$('auth-success').style.display='none';}
 
-// ===== UI FUNCTIONS =====
-function hideLoading() {
-  $('loading-screen').classList.add('hidden');
-}
+  function formatDate(d){if(!d)return null;var date=new Date(d);var today=new Date();today.setHours(0,0,0,0);var tom=new Date(today);tom.setDate(tom.getDate()+1);if(date.toDateString()===today.toDateString())return"Aujourd'hui";if(date.toDateString()===tom.toDateString())return'Demain';return date.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
+  function getDaysUntil(d){if(!d)return null;var date=new Date(d);var today=new Date();today.setHours(0,0,0,0);date.setHours(0,0,0,0);return Math.ceil((date-today)/(1000*60*60*24));}
+  function getPriority(t){return t.priority||'medium';}
+  function getEffectivePriority(t){var due=t.due_date||t.dueDate;if(due){var days=getDaysUntil(due);if(days!==null&&days<=1)return'high';}return t.priority||'medium';}
+  function sortTasks(arr){var order={high:0,medium:1,low:2};return arr.slice().sort(function(a,b){if(a.completed!==b.completed)return a.completed?1:-1;return order[getEffectivePriority(a)]-order[getEffectivePriority(b)];});}
+  function genId(){return Date.now().toString(36)+Math.random().toString(36).substr(2);}
+  function applyTheme(){document.documentElement.setAttribute('data-theme',theme);$('theme-toggle').classList.toggle('active',theme==='dark');}
+  function toggleTheme(){theme=theme==='dark'?'light':'dark';localStorage.setItem('tf_theme',theme);applyTheme();}
 
-function showApp() {
-  console.log('showApp called');
-  $('auth-screen').classList.add('hidden');
-  $('app').style.display = 'flex';
-  hideLoading();
-}
-
-function showAuth() {
-  console.log('showAuth called');
-  $('auth-screen').classList.remove('hidden');
-  $('app').style.display = 'none';
-  hideLoading();
-}
-
-function toast(msg) {
-  const el = $('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
-
-function showError(msg) {
-  $('auth-error').textContent = msg;
-  $('auth-error').style.display = 'block';
-  $('auth-success').style.display = 'none';
-}
-
-function showSuccess(msg) {
-  $('auth-success').textContent = msg;
-  $('auth-success').style.display = 'block';
-  $('auth-error').style.display = 'none';
-}
-
-function hideMessages() {
-  $('auth-error').style.display = 'none';
-  $('auth-success').style.display = 'none';
-}
-
-// ===== AUTH =====
-async function initAuth() {
-  console.log('initAuth started');
-  
-  // Check for existing session
-  const { data: { session } } = await sb.auth.getSession();
-  console.log('Existing session:', session ? 'yes' : 'no');
-  
-  if (session?.user) {
-    currentUser = session.user;
-    await loadTasks();
-    updateUserUI();
-    showApp();
-    render();
-    return;
-  }
-  
-  // Check local mode
-  if (isLocalMode) {
-    tasks = JSON.parse(localStorage.getItem('tf_tasks') || '[]');
-    updateUserUI();
-    showApp();
-    render();
-    return;
-  }
-  
-  // No session, show auth
-  showAuth();
-}
-
-// Auth state listener
-sb.auth.onAuthStateChange(async (event, session) => {
-  console.log('Auth event:', event, 'Session:', session ? 'yes' : 'no');
-  
-  if (event === 'SIGNED_IN' && session?.user) {
-    currentUser = session.user;
-    isLocalMode = false;
-    localStorage.removeItem('tf_local_mode');
-    await loadTasks();
-    updateUserUI();
-    showApp();
-    render();
-    toast('Connecté !');
-  } else if (event === 'SIGNED_OUT') {
-    currentUser = null;
-    tasks = [];
-    if (!isLocalMode) {
-      showAuth();
-    }
-  }
-});
-
-async function loginWithEmail() {
-  const email = $('login-email').value.trim();
-  const password = $('login-password').value;
-  
-  if (!email || !password) {
-    showError('Remplis tous les champs');
-    return;
-  }
-  
-  hideMessages();
-  
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  
-  if (error) {
-    console.error('Login error:', error);
-    showError(error.message.includes('Invalid') ? 'Email ou mot de passe incorrect' : error.message);
-  }
-}
-
-async function signupWithEmail() {
-  const email = $('signup-email').value.trim();
-  const password = $('signup-password').value;
-  
-  if (!email || !password) {
-    showError('Remplis tous les champs');
-    return;
-  }
-  
-  if (password.length < 6) {
-    showError('Le mot de passe doit faire au moins 6 caractères');
-    return;
-  }
-  
-  hideMessages();
-  
-  const { data, error } = await sb.auth.signUp({ 
-    email, 
-    password,
-    options: { emailRedirectTo: window.location.origin }
-  });
-  
-  if (error) {
-    console.error('Signup error:', error);
-    showError(error.message);
-  } else if (data?.user?.identities?.length === 0) {
-    showError('Cet email est déjà utilisé');
-  } else {
-    showSuccess('Vérifie ta boîte mail pour confirmer ton compte !');
-  }
-}
-
-async function forgotPassword() {
-  const email = $('forgot-email').value.trim();
-  
-  if (!email) {
-    showError('Entre ton email');
-    return;
-  }
-  
-  hideMessages();
-  
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin
-  });
-  
-  if (error) {
-    showError(error.message);
-  } else {
-    showSuccess('Email envoyé ! Vérifie ta boîte mail.');
-  }
-}
-
-async function loginWithGoogle() {
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.origin }
-  });
-  
-  if (error) {
-    toast('Erreur: ' + error.message);
-  }
-}
-
-async function logout() {
-  await sb.auth.signOut();
-  currentUser = null;
-  tasks = [];
-  isLocalMode = false;
-  localStorage.removeItem('tf_tasks');
-  localStorage.removeItem('tf_local_mode');
-  updateUserUI();
-  closeSettings();
-  showAuth();
-}
-
-function continueWithoutAccount() {
-  isLocalMode = true;
-  localStorage.setItem('tf_local_mode', 'true');
-  tasks = JSON.parse(localStorage.getItem('tf_tasks') || '[]');
-  updateUserUI();
-  showApp();
-  render();
-  toast('Mode local activé');
-}
-
-function updateUserUI() {
-  const avatar = $('user-avatar');
-  
-  if (currentUser) {
-    const url = currentUser.user_metadata?.avatar_url;
-    avatar.innerHTML = url 
-      ? `<img src="${url}" alt="">` 
-      : `<span>${(currentUser.email?.[0] || '?').toUpperCase()}</span>`;
-    $('settings-email').textContent = currentUser.email || 'Connecté';
-    $('logout-item').style.display = 'flex';
-  } else {
-    avatar.innerHTML = '<span>?</span>';
-    $('settings-email').textContent = isLocalMode ? 'Mode local' : 'Non connecté';
-    $('logout-item').style.display = isLocalMode ? 'flex' : 'none';
-  }
-}
-
-// ===== DATA =====
-async function loadTasks() {
-  if (!currentUser) return;
-  
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: false });
-  
-  if (!error) {
-    tasks = data || [];
-  }
-}
-
-async function saveTask(task) {
-  if (isLocalMode || !currentUser) {
-    localStorage.setItem('tf_tasks', JSON.stringify(tasks));
-    return;
-  }
-  
-  await sb.from('tasks').upsert({
-    ...task,
-    user_id: currentUser.id,
-    updated_at: new Date().toISOString()
-  });
-}
-
-async function deleteTaskFromDB(id) {
-  if (isLocalMode || !currentUser) return;
-  await sb.from('tasks').delete().eq('id', id);
-}
-
-function saveLocal() {
-  localStorage.setItem('tf_tasks', JSON.stringify(tasks));
-}
-
-function saveCategories() {
-  localStorage.setItem('tf_categories', JSON.stringify(categories));
-}
-
-// ===== HELPERS =====
-function formatDate(d) {
-  if (!d) return null;
-  const date = new Date(d);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const tom = new Date(today); tom.setDate(tom.getDate()+1);
-  if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
-  if (date.toDateString() === tom.toDateString()) return 'Demain';
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-}
-
-function getDaysUntil(d) {
-  if (!d) return null;
-  const date = new Date(d); const today = new Date();
-  today.setHours(0,0,0,0); date.setHours(0,0,0,0);
-  return Math.ceil((date - today) / (1000*60*60*24));
-}
-
-function getPriority(t) { return t.priority || 'medium'; }
-
-function getEffectivePriority(t) {
-  const due = t.due_date || t.dueDate;
-  if (due) {
-    const days = getDaysUntil(due);
-    if (days !== null && days <= 1) return 'high';
-  }
-  return t.priority || 'medium';
-}
-
-function sortTasks(arr) {
-  const order = { high: 0, medium: 1, low: 2 };
-  return [...arr].sort((a, b) => {
-    if (a.completed !== b.completed) return a.completed ? 1 : -1;
-    return order[getEffectivePriority(a)] - order[getEffectivePriority(b)];
-  });
-}
-
-const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
-
-// ===== THEME =====
-function applyTheme() {
-  document.documentElement.setAttribute('data-theme', theme);
-  $('theme-toggle').classList.toggle('active', theme === 'dark');
-}
-
-function toggleTheme() {
-  theme = theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('tf_theme', theme);
-  applyTheme();
-}
-
-// ===== RENDER =====
-function updateCounts() {
-  const active = tasks.filter(t => !t.completed);
-  $('count-all').textContent = active.length;
-  $('count-urgent').textContent = active.filter(t => getPriority(t) === 'high').length;
-  $('count-medium').textContent = active.filter(t => getPriority(t) === 'medium').length;
-  $('count-low').textContent = active.filter(t => getPriority(t) === 'low').length;
-  $('count-done').textContent = tasks.filter(t => t.completed).length;
-}
-
-function render() {
-  updateCounts();
-  
-  if (currentView === 'categories') {
-    renderCategories();
-  } else {
-    renderTasks();
-  }
-  
-  // Update nav
-  $qa('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.view === currentView));
-  $qa('.stat-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === currentFilter));
-  $('stats-row').classList.toggle('hidden', currentView === 'categories');
-  
-  const titles = { today: "Aujourd'hui", all: 'Toutes les tâches', categories: 'Catégories', archive: 'Archives' };
-  $('page-title').textContent = titles[currentView];
-  $('header-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-}
-
-function renderTasks() {
-  const main = $('main');
-  let list = [...tasks];
-  
-  // View filter
-  if (currentView === 'today') {
-    const today = new Date().toISOString().split('T')[0];
-    list = list.filter(t => !t.completed && ((t.due_date || t.dueDate) === today || getEffectivePriority(t) === 'high' || !(t.due_date || t.dueDate)));
-  } else if (currentView === 'all') {
-    list = list.filter(t => !t.completed);
-  } else if (currentView === 'archive') {
-    list = list.filter(t => t.completed);
-  }
-  
-  // Priority filter
-  if (currentFilter === 'high') list = list.filter(t => getPriority(t) === 'high' && !t.completed);
-  else if (currentFilter === 'medium') list = list.filter(t => getPriority(t) === 'medium' && !t.completed);
-  else if (currentFilter === 'low') list = list.filter(t => getPriority(t) === 'low' && !t.completed);
-  else if (currentFilter === 'done') list = tasks.filter(t => t.completed);
-  
-  list = sortTasks(list);
-  
-  if (!list.length) {
-    main.innerHTML = `<div class="empty-state"><h3>Aucune tâche</h3><p>Ajoute une tâche avec le bouton +</p></div>`;
-    return;
-  }
-  
-  main.innerHTML = `<div class="section"><div class="task-list">${list.map(t => {
-    const p = getEffectivePriority(t);
-    const due = t.due_date || t.dueDate;
-    const cat = categories.find(c => c.id === (t.category_id || t.categoryId));
-    const isUrgent = due && getDaysUntil(due) <= 1;
-    
-    return `<div class="task-item ${t.completed?'completed':''}" data-id="${t.id}">
-      <div class="task-checkbox priority-${p} ${t.completed?'checked':''}" data-id="${t.id}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div class="task-content" data-id="${t.id}">
-        <div class="task-title">${t.title}</div>
-        <div class="task-meta">
-          ${cat ? `<span class="task-tag" style="border-left:3px solid ${cat.color};padding-left:8px">${cat.name}</span>` : ''}
-          ${due ? `<span class="task-tag ${isUrgent?'urgent':''}">${formatDate(due)}</span>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('')}</div></div>`;
-  
-  // Attach listeners
-  $qa('.task-checkbox').forEach(el => {
-    el.onclick = e => { e.stopPropagation(); toggleComplete(el.dataset.id); };
-  });
-  $qa('.task-content').forEach(el => {
-    el.onclick = () => openTaskModal(tasks.find(t => t.id === el.dataset.id));
-  });
-}
-
-function renderCategories() {
-  const main = $('main');
-  
-  main.innerHTML = `<div class="section">
-    <div class="section-title">Mes catégories</div>
-    ${categories.map(cat => {
-      const count = tasks.filter(t => (t.category_id || t.categoryId) === cat.id && !t.completed).length;
-      return `<div class="category-item">
-        <div class="dot" style="background:${cat.color}"></div>
-        <div class="name">${cat.name}</div>
-        <div class="count">${count} tâche${count !== 1 ? 's' : ''}</div>
-        <button class="delete-btn" data-id="${cat.id}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>`;
-    }).join('')}
-    <button class="btn btn-secondary" id="add-category-btn" style="margin-top:16px;width:100%">+ Ajouter une catégorie</button>
-  </div>`;
-  
-  $qa('.delete-btn').forEach(btn => {
-    btn.onclick = () => deleteCategory(btn.dataset.id);
-  });
-  $('add-category-btn').onclick = openCategoryModal;
-}
-
-// ===== TASK ACTIONS =====
-async function toggleComplete(id) {
-  const task = tasks.find(t => t.id === id);
-  if (!task) return;
-  
-  task.completed = !task.completed;
-  task.updated_at = new Date().toISOString();
-  
-  await saveTask(task);
-  saveLocal();
-  render();
-  
-  if (task.completed) toast('Bien joué ! 🎉');
-}
-
-async function saveTaskForm() {
-  const title = $('task-input').value.trim();
-  if (!title) { toast('Ajoute un titre'); return; }
-  
-  const priority = $q('.chip[data-priority].selected')?.dataset.priority || 'medium';
-  const categoryId = $q('.chip[data-category].selected')?.dataset.category || categories[0]?.id;
-  const dueDate = $('task-date').value || null;
-  const notes = $('task-notes').value.trim();
-  
-  if (editingTask) {
-    const task = tasks.find(t => t.id === editingTask.id);
-    if (task) {
-      Object.assign(task, { title, priority, category_id: categoryId, due_date: dueDate, notes });
-      await saveTask(task);
-    }
-    toast('Modifié');
-  } else {
-    const task = {
-      id: genId(),
-      title, priority, category_id: categoryId, due_date: dueDate, notes,
-      completed: false,
-      created_at: new Date().toISOString()
-    };
-    tasks.unshift(task);
-    await saveTask(task);
-    toast('Ajouté');
-  }
-  
-  saveLocal();
-  closeTaskModal();
-  render();
-}
-
-async function deleteTask() {
-  if (!editingTask) return;
-  
-  tasks = tasks.filter(t => t.id !== editingTask.id);
-  await deleteTaskFromDB(editingTask.id);
-  saveLocal();
-  closeTaskModal();
-  render();
-  toast('Supprimé');
-}
-
-// ===== CATEGORY ACTIONS =====
-function deleteCategory(id) {
-  if (categories.length <= 1) {
-    toast('Garde au moins une catégorie');
-    return;
-  }
-  
-  const cat = categories.find(c => c.id === id);
-  if (!confirm(`Supprimer "${cat?.name}" ?`)) return;
-  
-  categories = categories.filter(c => c.id !== id);
-  saveCategories();
-  render();
-  toast('Catégorie supprimée');
-}
-
-function saveCategoryForm() {
-  const name = $('category-name-input').value.trim();
-  if (!name) { toast('Ajoute un nom'); return; }
-  
-  const color = $q('.color-option.selected')?.dataset.color || '#8b5cf6';
-  
-  categories.push({ id: 'cat_' + genId(), name, color });
-  saveCategories();
-  closeCategoryModal();
-  render();
-  toast('Catégorie ajoutée');
-}
-
-// ===== MODALS =====
-function openTaskModal(task = null) {
-  editingTask = task;
-  
-  $('modal-title').textContent = task ? 'Modifier' : 'Nouvelle tâche';
-  $('task-input').value = task?.title || '';
-  $('task-notes').value = task?.notes || '';
-  $('task-date').value = task?.due_date || task?.dueDate || '';
-  $('delete-btn').style.display = task ? 'block' : 'none';
-  
-  $qa('.chip[data-priority]').forEach(c => c.classList.toggle('selected', c.dataset.priority === (task?.priority || 'medium')));
-  
-  // Render category chips
-  const sel = task?.category_id || task?.categoryId || categories[0]?.id;
-  $('category-chips').innerHTML = categories.map(cat => 
-    `<div class="chip ${cat.id === sel ? 'selected' : ''}" data-category="${cat.id}"><div class="dot" style="background:${cat.color}"></div>${cat.name}</div>`
-  ).join('');
-  
-  $('task-modal').classList.add('active');
-  setTimeout(() => $('task-input').focus(), 300);
-}
-
-function closeTaskModal() {
-  editingTask = null;
-  $('task-modal').classList.remove('active');
-}
-
-function openCategoryModal() {
-  $('category-name-input').value = '';
-  $qa('.color-option').forEach(c => c.classList.remove('selected'));
-  $q('.color-option').classList.add('selected');
-  $('category-modal').classList.add('active');
-  setTimeout(() => $('category-name-input').focus(), 300);
-}
-
-function closeCategoryModal() {
-  $('category-modal').classList.remove('active');
-}
-
-function openSettings() {
-  $('settings-panel').classList.add('open');
-  $('settings-backdrop').classList.add('open');
-}
-
-function closeSettings() {
-  $('settings-panel').classList.remove('open');
-  $('settings-backdrop').classList.remove('open');
-}
-
-// ===== AUTH UI =====
-function showLoginForm() {
-  $('login-form').style.display = 'block';
-  $('signup-form').style.display = 'none';
-  $('forgot-form').style.display = 'none';
-  $('tab-login').classList.add('active');
-  $('tab-signup').classList.remove('active');
-  hideMessages();
-}
-
-function showSignupForm() {
-  $('login-form').style.display = 'none';
-  $('signup-form').style.display = 'block';
-  $('forgot-form').style.display = 'none';
-  $('tab-login').classList.remove('active');
-  $('tab-signup').classList.add('active');
-  hideMessages();
-}
-
-function showForgotForm() {
-  $('login-form').style.display = 'none';
-  $('signup-form').style.display = 'none';
-  $('forgot-form').style.display = 'block';
-  $('tab-login').classList.remove('active');
-  $('tab-signup').classList.remove('active');
-  hideMessages();
-}
-
-// ===== INIT =====
-function init() {
-  applyTheme();
-  
-  // Auth UI
-  $('tab-login').onclick = showLoginForm;
-  $('tab-signup').onclick = showSignupForm;
-  $('login-btn').onclick = loginWithEmail;
-  $('signup-btn').onclick = signupWithEmail;
-  $('forgot-btn').onclick = forgotPassword;
-  $('google-login').onclick = loginWithGoogle;
-  $('skip-auth').onclick = continueWithoutAccount;
-  $('forgot-password').onclick = showForgotForm;
-  $('back-to-login').onclick = showLoginForm;
-  
-  $('login-password').onkeypress = e => { if (e.key === 'Enter') loginWithEmail(); };
-  $('signup-password').onkeypress = e => { if (e.key === 'Enter') signupWithEmail(); };
-  $('forgot-email').onkeypress = e => { if (e.key === 'Enter') forgotPassword(); };
-  
-  // Task modal
-  $('fab').onclick = () => openTaskModal();
-  $('modal-close').onclick = closeTaskModal;
-  $('cancel-btn').onclick = closeTaskModal;
-  $('save-btn').onclick = saveTaskForm;
-  $('delete-btn').onclick = deleteTask;
-  $('task-modal').onclick = e => { if (e.target.id === 'task-modal') closeTaskModal(); };
-  
-  // Priority chips
-  $qa('.chip[data-priority]').forEach(c => {
-    c.onclick = () => {
-      $qa('.chip[data-priority]').forEach(x => x.classList.remove('selected'));
-      c.classList.add('selected');
-    };
-  });
-  
-  // Category chips (delegated)
-  $('category-chips').onclick = e => {
-    const chip = e.target.closest('.chip');
-    if (chip) {
-      $qa('.chip[data-category]').forEach(x => x.classList.remove('selected'));
-      chip.classList.add('selected');
-    }
-  };
-  
-  // Category modal
-  $('category-modal-close').onclick = closeCategoryModal;
-  $('category-cancel-btn').onclick = closeCategoryModal;
-  $('category-save-btn').onclick = saveCategoryForm;
-  $('category-modal').onclick = e => { if (e.target.id === 'category-modal') closeCategoryModal(); };
-  
-  $('color-picker').onclick = e => {
-    const opt = e.target.closest('.color-option');
-    if (opt) {
-      $qa('.color-option').forEach(c => c.classList.remove('selected'));
-      opt.classList.add('selected');
-    }
-  };
-  
-  // Navigation
-  $qa('.nav-item').forEach(i => {
-    i.onclick = () => {
-      currentView = i.dataset.view;
-      currentFilter = 'all';
+  async function initAuth(){
+    var result=await db.auth.getSession();
+    if(result.data.session&&result.data.session.user){
+      currentUser=result.data.session.user;
+      await loadTasks();
+      updateUserUI();
+      showApp();
       render();
-    };
-  });
-  
-  $qa('.stat-chip').forEach(c => {
-    c.onclick = () => {
-      currentFilter = c.dataset.filter;
+      return;
+    }
+    if(isLocalMode){
+      tasks=JSON.parse(localStorage.getItem('tf_tasks')||'[]');
+      updateUserUI();
+      showApp();
       render();
-    };
-  });
-  
-  // Settings
-  $('user-avatar').onclick = openSettings;
-  $('settings-close').onclick = closeSettings;
-  $('settings-backdrop').onclick = closeSettings;
-  $('theme-toggle').onclick = toggleTheme;
-  $('logout-item').onclick = logout;
-  
-  // Service worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+      return;
+    }
+    showAuth();
   }
-  
-  // Start auth check
-  initAuth();
-}
 
-init();
+  db.auth.onAuthStateChange(async function(event,session){
+    console.log('Auth:',event);
+    if(event==='SIGNED_IN'&&session&&session.user){
+      currentUser=session.user;
+      isLocalMode=false;
+      localStorage.removeItem('tf_local_mode');
+      await loadTasks();
+      updateUserUI();
+      showApp();
+      render();
+      toast('Connecté !');
+    }else if(event==='SIGNED_OUT'){
+      currentUser=null;
+      tasks=[];
+      if(!isLocalMode)showAuth();
+    }
+  });
+
+  async function loginWithEmail(){
+    var email=$('login-email').value.trim();
+    var pw=$('login-password').value;
+    if(!email||!pw){showError('Remplis tous les champs');return;}
+    hideMessages();
+    var r=await db.auth.signInWithPassword({email:email,password:pw});
+    if(r.error)showError(r.error.message.indexOf('Invalid')>=0?'Email ou mot de passe incorrect':r.error.message);
+  }
+
+  async function signupWithEmail(){
+    var email=$('signup-email').value.trim();
+    var pw=$('signup-password').value;
+    if(!email||!pw){showError('Remplis tous les champs');return;}
+    if(pw.length<6){showError('Le mot de passe doit faire au moins 6 caractères');return;}
+    hideMessages();
+    var r=await db.auth.signUp({email:email,password:pw,options:{emailRedirectTo:window.location.origin}});
+    if(r.error)showError(r.error.message);
+    else if(r.data&&r.data.user&&r.data.user.identities&&r.data.user.identities.length===0)showError('Cet email est déjà utilisé');
+    else showSuccess('Vérifie ta boîte mail pour confirmer ton compte !');
+  }
+
+  async function forgotPassword(){
+    var email=$('forgot-email').value.trim();
+    if(!email){showError('Entre ton email');return;}
+    hideMessages();
+    var r=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
+    if(r.error)showError(r.error.message);else showSuccess('Email envoyé !');
+  }
+
+  async function loginWithGoogle(){await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});}
+
+  async function logout(){
+    await db.auth.signOut();
+    currentUser=null;tasks=[];isLocalMode=false;
+    localStorage.removeItem('tf_tasks');localStorage.removeItem('tf_local_mode');
+    updateUserUI();closeSettings();showAuth();
+  }
+
+  function continueWithoutAccount(){
+    isLocalMode=true;
+    localStorage.setItem('tf_local_mode','true');
+    tasks=JSON.parse(localStorage.getItem('tf_tasks')||'[]');
+    updateUserUI();showApp();render();toast('Mode local activé');
+  }
+
+  function updateUserUI(){
+    var av=$('user-avatar');
+    if(currentUser){
+      var url=currentUser.user_metadata&&currentUser.user_metadata.avatar_url;
+      av.innerHTML=url?'<img src="'+url+'" alt="">':'<span>'+(currentUser.email?currentUser.email[0].toUpperCase():'?')+'</span>';
+      $('settings-email').textContent=currentUser.email||'Connecté';
+      $('logout-item').style.display='flex';
+    }else{
+      av.innerHTML='<span>?</span>';
+      $('settings-email').textContent=isLocalMode?'Mode local':'Non connecté';
+      $('logout-item').style.display=isLocalMode?'flex':'none';
+    }
+  }
+
+  async function loadTasks(){
+    if(!currentUser)return;
+    var r=await db.from('tasks').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+    if(!r.error)tasks=r.data||[];
+  }
+
+  async function saveTask(t){
+    if(isLocalMode||!currentUser){localStorage.setItem('tf_tasks',JSON.stringify(tasks));return;}
+    await db.from('tasks').upsert({id:t.id,user_id:currentUser.id,title:t.title,notes:t.notes||null,priority:t.priority||'medium',category_id:t.category_id||null,due_date:t.due_date||null,completed:t.completed||false,created_at:t.created_at||new Date().toISOString(),updated_at:new Date().toISOString()});
+  }
+
+  async function deleteTaskFromDB(id){if(isLocalMode||!currentUser)return;await db.from('tasks').delete().eq('id',id);}
+  function saveLocal(){localStorage.setItem('tf_tasks',JSON.stringify(tasks));}
+  function saveCategories(){localStorage.setItem('tf_categories',JSON.stringify(categories));}
+
+  function updateCounts(){
+    var active=tasks.filter(function(t){return!t.completed;});
+    $('count-all').textContent=active.length;
+    $('count-urgent').textContent=active.filter(function(t){return getPriority(t)==='high';}).length;
+    $('count-medium').textContent=active.filter(function(t){return getPriority(t)==='medium';}).length;
+    $('count-low').textContent=active.filter(function(t){return getPriority(t)==='low';}).length;
+    $('count-done').textContent=tasks.filter(function(t){return t.completed;}).length;
+  }
+
+  function render(){
+    updateCounts();
+    if(currentView==='categories')renderCategories();else renderTasks();
+    $qa('.nav-item').forEach(function(i){i.classList.toggle('active',i.dataset.view===currentView);});
+    $qa('.stat-chip').forEach(function(c){c.classList.toggle('active',c.dataset.filter===currentFilter);});
+    $('stats-row').classList.toggle('hidden',currentView==='categories');
+    var titles={today:"Aujourd'hui",all:'Toutes les tâches',categories:'Catégories',archive:'Archives'};
+    $('page-title').textContent=titles[currentView];
+    $('header-date').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  }
+
+  function renderTasks(){
+    var main=$('main');var list=tasks.slice();
+    if(currentView==='today'){var today=new Date().toISOString().split('T')[0];list=list.filter(function(t){return!t.completed&&((t.due_date||t.dueDate)===today||getEffectivePriority(t)==='high'||!(t.due_date||t.dueDate));});}
+    else if(currentView==='all'){list=list.filter(function(t){return!t.completed;});}
+    else if(currentView==='archive'){list=list.filter(function(t){return t.completed;});}
+    if(currentFilter==='high')list=list.filter(function(t){return getPriority(t)==='high'&&!t.completed;});
+    else if(currentFilter==='medium')list=list.filter(function(t){return getPriority(t)==='medium'&&!t.completed;});
+    else if(currentFilter==='low')list=list.filter(function(t){return getPriority(t)==='low'&&!t.completed;});
+    else if(currentFilter==='done')list=tasks.filter(function(t){return t.completed;});
+    list=sortTasks(list);
+    if(!list.length){main.innerHTML='<div class="empty-state"><h3>Aucune tâche</h3><p>Ajoute une tâche avec le bouton +</p></div>';return;}
+    var html='<div class="section"><div class="task-list">';
+    list.forEach(function(t){
+      var p=getEffectivePriority(t);var due=t.due_date||t.dueDate;var cat=categories.find(function(c){return c.id===(t.category_id||t.categoryId);});var isUrgent=due&&getDaysUntil(due)<=1;
+      html+='<div class="task-item '+(t.completed?'completed':'')+'" data-id="'+t.id+'"><div class="task-checkbox priority-'+p+' '+(t.completed?'checked':'')+'" data-id="'+t.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><div class="task-content" data-id="'+t.id+'"><div class="task-title">'+t.title+'</div><div class="task-meta">';
+      if(cat)html+='<span class="task-tag" style="border-left:3px solid '+cat.color+';padding-left:8px">'+cat.name+'</span>';
+      if(due)html+='<span class="task-tag '+(isUrgent?'urgent':'')+'">'+formatDate(due)+'</span>';
+      html+='</div></div></div>';
+    });
+    html+='</div></div>';main.innerHTML=html;
+    $qa('.task-checkbox').forEach(function(el){el.onclick=function(e){e.stopPropagation();toggleComplete(el.dataset.id);};});
+    $qa('.task-content').forEach(function(el){el.onclick=function(){openTaskModal(tasks.find(function(t){return t.id===el.dataset.id;}));};});
+  }
+
+  function renderCategories(){
+    var main=$('main');var html='<div class="section"><div class="section-title">Mes catégories</div>';
+    categories.forEach(function(cat){var count=tasks.filter(function(t){return(t.category_id||t.categoryId)===cat.id&&!t.completed;}).length;html+='<div class="category-item"><div class="dot" style="background:'+cat.color+'"></div><div class="name">'+cat.name+'</div><div class="count">'+count+' tâche'+(count!==1?'s':'')+'</div><button class="delete-btn" data-id="'+cat.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';});
+    html+='<button class="btn btn-secondary" id="add-category-btn" style="margin-top:16px;width:100%">+ Ajouter une catégorie</button></div>';
+    main.innerHTML=html;
+    $qa('.delete-btn').forEach(function(btn){btn.onclick=function(){deleteCategory(btn.dataset.id);};});
+    $('add-category-btn').onclick=openCategoryModal;
+  }
+
+  async function toggleComplete(id){var task=tasks.find(function(t){return t.id===id;});if(!task)return;task.completed=!task.completed;task.updated_at=new Date().toISOString();await saveTask(task);saveLocal();render();if(task.completed)toast('Bien joué ! 🎉');}
+
+  async function saveTaskForm(){
+    var title=$('task-input').value.trim();if(!title){toast('Ajoute un titre');return;}
+    var priorityEl=$q('.chip[data-priority].selected');var categoryEl=$q('.chip[data-category].selected');
+    var priority=priorityEl?priorityEl.dataset.priority:'medium';var categoryId=categoryEl?categoryEl.dataset.category:(categories[0]?categories[0].id:null);
+    var dueDate=$('task-date').value||null;var notes=$('task-notes').value.trim();
+    if(editingTask){var task=tasks.find(function(t){return t.id===editingTask.id;});if(task){task.title=title;task.priority=priority;task.category_id=categoryId;task.due_date=dueDate;task.notes=notes;await saveTask(task);}toast('Modifié');}
+    else{var newTask={id:genId(),title:title,priority:priority,category_id:categoryId,due_date:dueDate,notes:notes,completed:false,created_at:new Date().toISOString()};tasks.unshift(newTask);await saveTask(newTask);toast('Ajouté');}
+    saveLocal();closeTaskModal();render();
+  }
+
+  async function deleteTask(){if(!editingTask)return;tasks=tasks.filter(function(t){return t.id!==editingTask.id;});await deleteTaskFromDB(editingTask.id);saveLocal();closeTaskModal();render();toast('Supprimé');}
+  function deleteCategory(id){if(categories.length<=1){toast('Garde au moins une catégorie');return;}var cat=categories.find(function(c){return c.id===id;});if(!confirm('Supprimer "'+(cat?cat.name:'')+'" ?'))return;categories=categories.filter(function(c){return c.id!==id;});saveCategories();render();toast('Catégorie supprimée');}
+  function saveCategoryForm(){var name=$('category-name-input').value.trim();if(!name){toast('Ajoute un nom');return;}var colorEl=$q('.color-option.selected');var color=colorEl?colorEl.dataset.color:'#8b5cf6';categories.push({id:'cat_'+genId(),name:name,color:color});saveCategories();closeCategoryModal();render();toast('Catégorie ajoutée');}
+
+  function openTaskModal(task){
+    editingTask=task||null;$('modal-title').textContent=task?'Modifier':'Nouvelle tâche';$('task-input').value=task?task.title:'';$('task-notes').value=task?(task.notes||''):'';$('task-date').value=task?(task.due_date||task.dueDate||''):'';$('delete-btn').style.display=task?'block':'none';
+    var taskPriority=task?task.priority:'medium';$qa('.chip[data-priority]').forEach(function(c){c.classList.toggle('selected',c.dataset.priority===taskPriority);});
+    var sel=task?(task.category_id||task.categoryId):(categories[0]?categories[0].id:null);var catHtml='';categories.forEach(function(cat){catHtml+='<div class="chip '+(cat.id===sel?'selected':'')+'" data-category="'+cat.id+'"><div class="dot" style="background:'+cat.color+'"></div>'+cat.name+'</div>';});$('category-chips').innerHTML=catHtml;
+    $('task-modal').classList.add('active');setTimeout(function(){$('task-input').focus();},300);
+  }
+
+  function closeTaskModal(){editingTask=null;$('task-modal').classList.remove('active');}
+  function openCategoryModal(){$('category-name-input').value='';$qa('.color-option').forEach(function(c){c.classList.remove('selected');});$q('.color-option').classList.add('selected');$('category-modal').classList.add('active');setTimeout(function(){$('category-name-input').focus();},300);}
+  function closeCategoryModal(){$('category-modal').classList.remove('active');}
+  function openSettings(){$('settings-panel').classList.add('open');$('settings-backdrop').classList.add('open');}
+  function closeSettings(){$('settings-panel').classList.remove('open');$('settings-backdrop').classList.remove('open');}
+  function showLoginForm(){$('login-form').style.display='block';$('signup-form').style.display='none';$('forgot-form').style.display='none';$('tab-login').classList.add('active');$('tab-signup').classList.remove('active');hideMessages();}
+  function showSignupForm(){$('login-form').style.display='none';$('signup-form').style.display='block';$('forgot-form').style.display='none';$('tab-login').classList.remove('active');$('tab-signup').classList.add('active');hideMessages();}
+  function showForgotForm(){$('login-form').style.display='none';$('signup-form').style.display='none';$('forgot-form').style.display='block';$('tab-login').classList.remove('active');$('tab-signup').classList.remove('active');hideMessages();}
+
+  function init(){
+    applyTheme();
+    $('tab-login').onclick=showLoginForm;$('tab-signup').onclick=showSignupForm;
+    $('login-btn').onclick=loginWithEmail;$('signup-btn').onclick=signupWithEmail;$('forgot-btn').onclick=forgotPassword;
+    $('google-login').onclick=loginWithGoogle;$('skip-auth').onclick=continueWithoutAccount;
+    $('forgot-password').onclick=showForgotForm;$('back-to-login').onclick=showLoginForm;
+    $('login-password').onkeypress=function(e){if(e.key==='Enter')loginWithEmail();};
+    $('signup-password').onkeypress=function(e){if(e.key==='Enter')signupWithEmail();};
+    $('forgot-email').onkeypress=function(e){if(e.key==='Enter')forgotPassword();};
+    $('fab').onclick=function(){openTaskModal();};$('modal-close').onclick=closeTaskModal;$('cancel-btn').onclick=closeTaskModal;$('save-btn').onclick=saveTaskForm;$('delete-btn').onclick=deleteTask;
+    $('task-modal').onclick=function(e){if(e.target.id==='task-modal')closeTaskModal();};
+    $qa('.chip[data-priority]').forEach(function(c){c.onclick=function(){$qa('.chip[data-priority]').forEach(function(x){x.classList.remove('selected');});c.classList.add('selected');};});
+    $('category-chips').onclick=function(e){var chip=e.target.closest('.chip');if(chip){$qa('.chip[data-category]').forEach(function(x){x.classList.remove('selected');});chip.classList.add('selected');}};
+    $('category-modal-close').onclick=closeCategoryModal;$('category-cancel-btn').onclick=closeCategoryModal;$('category-save-btn').onclick=saveCategoryForm;
+    $('category-modal').onclick=function(e){if(e.target.id==='category-modal')closeCategoryModal();};
+    $('color-picker').onclick=function(e){var opt=e.target.closest('.color-option');if(opt){$qa('.color-option').forEach(function(c){c.classList.remove('selected');});opt.classList.add('selected');}};
+    $qa('.nav-item').forEach(function(i){i.onclick=function(){currentView=i.dataset.view;currentFilter='all';render();};});
+    $qa('.stat-chip').forEach(function(c){c.onclick=function(){currentFilter=c.dataset.filter;render();};});
+    $('user-avatar').onclick=openSettings;$('settings-close').onclick=closeSettings;$('settings-backdrop').onclick=closeSettings;$('theme-toggle').onclick=toggleTheme;$('logout-item').onclick=logout;
+    if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
+    initAuth();
+  }
+
+  init();
+})();
 </script>
 </body>
 </html>
