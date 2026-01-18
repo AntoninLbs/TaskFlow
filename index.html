@@ -317,10 +317,10 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://qyrsuywefwaqxrhgyitj.supabase.co';
+const SUPABASE_URL = 'https://qyrsuywefwaqxrhgyitj.sb.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // State
 let currentUser = null;
@@ -388,7 +388,7 @@ async function initAuth() {
   console.log('initAuth started');
   
   // Check for existing session
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   console.log('Existing session:', session ? 'yes' : 'no');
   
   if (session?.user) {
@@ -414,7 +414,7 @@ async function initAuth() {
 }
 
 // Auth state listener
-supabase.auth.onAuthStateChange(async (event, session) => {
+sb.auth.onAuthStateChange(async (event, session) => {
   console.log('Auth event:', event, 'Session:', session ? 'yes' : 'no');
   
   if (event === 'SIGNED_IN' && session?.user) {
@@ -446,7 +446,7 @@ async function loginWithEmail() {
   
   hideMessages();
   
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await sb.auth.signInWithPassword({ email, password });
   
   if (error) {
     console.error('Login error:', error);
@@ -470,7 +470,7 @@ async function signupWithEmail() {
   
   hideMessages();
   
-  const { data, error } = await supabase.auth.signUp({ 
+  const { data, error } = await sb.auth.signUp({ 
     email, 
     password,
     options: { emailRedirectTo: window.location.origin }
@@ -496,7 +496,7 @@ async function forgotPassword() {
   
   hideMessages();
   
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin
   });
   
@@ -508,7 +508,7 @@ async function forgotPassword() {
 }
 
 async function loginWithGoogle() {
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin }
   });
@@ -519,7 +519,7 @@ async function loginWithGoogle() {
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   currentUser = null;
   tasks = [];
   isLocalMode = false;
@@ -578,7 +578,7 @@ async function saveTask(task) {
     return;
   }
   
-  await supabase.from('tasks').upsert({
+  await sb.from('tasks').upsert({
     ...task,
     user_id: currentUser.id,
     updated_at: new Date().toISOString()
@@ -587,7 +587,7 @@ async function saveTask(task) {
 
 async function deleteTaskFromDB(id) {
   if (isLocalMode || !currentUser) return;
-  await supabase.from('tasks').delete().eq('id', id);
+  await sb.from('tasks').delete().eq('id', id);
 }
 
 function saveLocal() {
