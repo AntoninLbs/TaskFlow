@@ -85,7 +85,7 @@
     .btn-google{background:#fff;color:#333;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;gap:10px}
     .btn-google svg{width:18px;height:18px}
     .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;align-items:center;padding:40px 24px;text-align:center;overflow-y:auto}
-    .auth-screen.hidden{display:none}
+    .auth-screen.hidden{display:none!important}
     .auth-logo{width:70px;height:70px;margin-top:40px;margin-bottom:20px}
     .auth-title{font-size:28px;font-weight:700;margin-bottom:8px}
     .auth-subtitle{font-size:15px;color:var(--text-muted);margin-bottom:32px;max-width:280px}
@@ -124,11 +124,19 @@
     .color-picker{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
     .color-option{width:32px;height:32px;border-radius:8px;cursor:pointer;border:2px solid transparent}
     .color-option.selected{border-color:var(--text)}
+    .loading-screen{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;align-items:center;justify-content:center}
+    .loading-screen.hidden{display:none}
+    .loader{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
     @media(min-width:768px){.app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}.bottom-nav{max-width:480px;left:50%;transform:translateX(-50%)}.fab{right:calc(50% - 220px)}}
   </style>
 </head>
 <body>
-  <div class="auth-screen" id="auth-screen">
+  <div class="loading-screen" id="loading-screen">
+    <div class="loader"></div>
+  </div>
+
+  <div class="auth-screen hidden" id="auth-screen">
     <svg class="auth-logo" viewBox="0 0 80 80" fill="none">
       <defs><linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs>
       <circle cx="40" cy="40" r="35" fill="none" stroke="#27272a" stroke-width="6"/>
@@ -309,965 +317,704 @@
   <div class="toast" id="toast"></div>
 
 <script>
-(function() {
-  'use strict';
+const SUPABASE_URL = 'https://qyrsuywefwaqxrhgyitj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// State
+let currentUser = null;
+let tasks = [];
+let categories = JSON.parse(localStorage.getItem('tf_categories')) || [
+  { id: 'cat_todo', name: 'À faire', color: '#8b5cf6' },
+  { id: 'cat_shopping', name: 'À acheter', color: '#ec4899' }
+];
+let currentView = 'today';
+let currentFilter = 'all';
+let editingTask = null;
+let theme = localStorage.getItem('tf_theme') || 'dark';
+let isLocalMode = localStorage.getItem('tf_local_mode') === 'true';
+
+// DOM
+const $ = id => document.getElementById(id);
+const $q = sel => document.querySelector(sel);
+const $qa = sel => document.querySelectorAll(sel);
+
+// ===== UI FUNCTIONS =====
+function hideLoading() {
+  $('loading-screen').classList.add('hidden');
+}
+
+function showApp() {
+  console.log('showApp called');
+  $('auth-screen').classList.add('hidden');
+  $('app').style.display = 'flex';
+  hideLoading();
+}
+
+function showAuth() {
+  console.log('showAuth called');
+  $('auth-screen').classList.remove('hidden');
+  $('app').style.display = 'none';
+  hideLoading();
+}
+
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function showError(msg) {
+  $('auth-error').textContent = msg;
+  $('auth-error').style.display = 'block';
+  $('auth-success').style.display = 'none';
+}
+
+function showSuccess(msg) {
+  $('auth-success').textContent = msg;
+  $('auth-success').style.display = 'block';
+  $('auth-error').style.display = 'none';
+}
+
+function hideMessages() {
+  $('auth-error').style.display = 'none';
+  $('auth-success').style.display = 'none';
+}
+
+// ===== AUTH =====
+async function initAuth() {
+  console.log('initAuth started');
   
-  // ===== CONFIG =====
-  const SUPABASE_URL = 'https://qyrsuywefwaqxrhgyitj.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cnN1eXdlZndhcXhyaGd5aXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTI2MTAsImV4cCI6MjA4NDE2ODYxMH0.MRrdIO7-ExCAS7oYbbMibh1SHTKYJ95w_4p4yW7lFB8';
-
-  let sb = null;
+  // Check for existing session
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log('Existing session:', session ? 'yes' : 'no');
   
-  try {
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: {
-        persistSession: true,
-        storageKey: 'tf-auth',
-        storage: window.localStorage
-      }
-    });
-  } catch(e) {
-    console.error('Supabase init error:', e);
-  }
-
-  const DEFAULT_CATEGORIES = [
-    { id: 'cat_todo', name: 'À faire', color: '#8b5cf6' },
-    { id: 'cat_shopping', name: 'À acheter', color: '#ec4899' }
-  ];
-
-  const state = {
-    user: null,
-    tasks: [],
-    categories: [],
-    currentView: 'today',
-    currentFilter: 'all',
-    editingTask: null,
-    theme: 'dark',
-    isLocalMode: false
-  };
-
-  // Load from localStorage
-  try {
-    state.categories = JSON.parse(localStorage.getItem('tf_categories')) || [...DEFAULT_CATEGORIES];
-    state.theme = localStorage.getItem('tf_theme') || 'dark';
-    state.isLocalMode = localStorage.getItem('tf_local_mode') === 'true';
-    state.tasks = JSON.parse(localStorage.getItem('tf_tasks')) || [];
-  } catch(e) {
-    console.error('LocalStorage error:', e);
-    state.categories = [...DEFAULT_CATEGORIES];
-  }
-
-  // ===== HELPERS =====
-  const $ = s => document.querySelector(s);
-  const $$ = s => document.querySelectorAll(s);
-  const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
-
-  function toast(msg) {
-    const el = $('#toast');
-    if (!el) return;
-    el.textContent = msg;
-    el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 2500);
-  }
-
-  function showError(msg) {
-    const el = $('#auth-error');
-    const suc = $('#auth-success');
-    if (el) { el.textContent = msg; el.style.display = 'block'; }
-    if (suc) suc.style.display = 'none';
-  }
-
-  function showSuccess(msg) {
-    const el = $('#auth-success');
-    const err = $('#auth-error');
-    if (el) { el.textContent = msg; el.style.display = 'block'; }
-    if (err) err.style.display = 'none';
-  }
-
-  function hideMessages() {
-    const err = $('#auth-error');
-    const suc = $('#auth-success');
-    if (err) err.style.display = 'none';
-    if (suc) suc.style.display = 'none';
-  }
-
-  function formatDate(d) {
-    if (!d) return null;
-    const date = new Date(d);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const tom = new Date(today); tom.setDate(tom.getDate()+1);
-    if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
-    if (date.toDateString() === tom.toDateString()) return 'Demain';
-    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-  }
-
-  function getDaysUntil(d) {
-    if (!d) return null;
-    const date = new Date(d); const today = new Date();
-    today.setHours(0,0,0,0); date.setHours(0,0,0,0);
-    return Math.ceil((date - today) / (1000*60*60*24));
-  }
-
-  function getPriority(t) {
-    return t.priority || 'medium';
-  }
-
-  function getEffectivePriority(t) {
-    const due = t.due_date || t.dueDate;
-    if (due) {
-      const days = getDaysUntil(due);
-      if (days !== null && days <= 1) return 'high';
-    }
-    return t.priority || 'medium';
-  }
-
-  function sortTasks(tasks) {
-    const order = { high: 0, medium: 1, low: 2 };
-    return [...tasks].sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1;
-      const ap = getEffectivePriority(a), bp = getEffectivePriority(b);
-      if (order[ap] !== order[bp]) return order[ap] - order[bp];
-      return new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0);
-    });
-  }
-
-  // ===== UI TOGGLE =====
-  function showApp() {
-    const auth = $('#auth-screen');
-    const app = $('#app');
-    if (auth) auth.classList.add('hidden');
-    if (app) app.style.display = 'flex';
-  }
-
-  function showAuth() {
-    const auth = $('#auth-screen');
-    const app = $('#app');
-    if (auth) auth.classList.remove('hidden');
-    if (app) app.style.display = 'none';
-    hideMessages();
-  }
-
-  // ===== AUTH =====
-  async function checkAuth() {
-    if (!sb) {
-      if (state.isLocalMode) {
-        showApp();
-        render();
-        return true;
-      }
-      return false;
-    }
-    
-    try {
-      const { data, error } = await sb.auth.getSession();
-      if (error) throw error;
-      
-      if (data?.session?.user) {
-        state.user = data.session.user;
-        state.isLocalMode = false;
-        localStorage.removeItem('tf_local_mode');
-        await loadFromSupabase();
-        updateUserUI();
-        showApp();
-        render();
-        return true;
-      }
-    } catch (e) {
-      console.error('Auth check error:', e);
-    }
-    
-    if (state.isLocalMode) {
-      updateUserUI();
-      showApp();
-      render();
-      return true;
-    }
-    
-    return false;
-  }
-
-  function setupAuthListener() {
-    if (!sb) return;
-    
-    sb.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event);
-      
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-        state.user = session.user;
-        state.isLocalMode = false;
-        localStorage.removeItem('tf_local_mode');
-        await loadFromSupabase();
-        updateUserUI();
-        showApp();
-        render();
-        if (event === 'SIGNED_IN') toast('Connecté !');
-      } else if (event === 'SIGNED_OUT') {
-        state.user = null;
-        state.tasks = [];
-        if (!state.isLocalMode) {
-          updateUserUI();
-          showAuth();
-        }
-      }
-    });
-  }
-
-  async function loginWithEmail() {
-    if (!sb) { showError('Service indisponible'); return; }
-    
-    const emailEl = $('#login-email');
-    const passEl = $('#login-password');
-    const email = emailEl?.value?.trim();
-    const password = passEl?.value;
-    
-    if (!email || !password) {
-      showError('Remplis tous les champs');
-      return;
-    }
-    
-    try {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    } catch (e) {
-      console.error(e);
-      if (e.message && e.message.includes('Invalid login')) {
-        showError('Email ou mot de passe incorrect');
-      } else {
-        showError(e.message || 'Erreur de connexion');
-      }
-    }
-  }
-
-  async function signupWithEmail() {
-    if (!sb) { showError('Service indisponible'); return; }
-    
-    const emailEl = $('#signup-email');
-    const passEl = $('#signup-password');
-    const email = emailEl?.value?.trim();
-    const password = passEl?.value;
-    
-    if (!email || !password) {
-      showError('Remplis tous les champs');
-      return;
-    }
-    
-    if (password.length < 6) {
-      showError('Le mot de passe doit faire au moins 6 caractères');
-      return;
-    }
-    
-    try {
-      const { data, error } = await sb.auth.signUp({ 
-        email, 
-        password,
-        options: { emailRedirectTo: window.location.origin }
-      });
-      if (error) throw error;
-      
-      if (data?.user?.identities?.length === 0) {
-        showError('Cet email est déjà utilisé');
-      } else {
-        showSuccess('Vérifie ta boîte mail pour confirmer ton compte !');
-      }
-    } catch (e) {
-      console.error(e);
-      showError(e.message || 'Erreur lors de l\'inscription');
-    }
-  }
-
-  async function forgotPassword() {
-    if (!sb) { showError('Service indisponible'); return; }
-    
-    const emailEl = $('#forgot-email');
-    const email = emailEl?.value?.trim();
-    
-    if (!email) {
-      showError('Entre ton email');
-      return;
-    }
-    
-    try {
-      const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin
-      });
-      if (error) throw error;
-      showSuccess('Email envoyé ! Vérifie ta boîte mail.');
-    } catch (e) {
-      console.error(e);
-      showError(e.message || 'Erreur');
-    }
-  }
-
-  async function loginWithGoogle() {
-    if (!sb) { toast('Service indisponible'); return; }
-    
-    try {
-      const { error } = await sb.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin }
-      });
-      if (error) throw error;
-    } catch (e) {
-      toast('Erreur: ' + (e.message || 'Connexion échouée'));
-      console.error(e);
-    }
-  }
-
-  async function logout() {
-    if (sb) {
-      try { await sb.auth.signOut(); } catch(e) { console.error(e); }
-    }
-    state.user = null;
-    state.tasks = [];
-    state.isLocalMode = false;
-    localStorage.removeItem('tf_tasks');
-    localStorage.removeItem('tf_local_mode');
-    updateUserUI();
-    closeSettings();
-    showAuth();
-  }
-
-  function continueWithoutAccount() {
-    state.isLocalMode = true;
-    localStorage.setItem('tf_local_mode', 'true');
-    state.tasks = JSON.parse(localStorage.getItem('tf_tasks') || '[]');
+  if (session?.user) {
+    currentUser = session.user;
+    await loadTasks();
     updateUserUI();
     showApp();
     render();
-    toast('Mode local activé');
+    return;
   }
-
-  function updateUserUI() {
-    const avatar = $('#user-avatar');
-    const email = $('#settings-email');
-    const logoutItem = $('#logout-item');
-    
-    if (state.user) {
-      const avatarUrl = state.user.user_metadata?.avatar_url;
-      if (avatar) {
-        avatar.innerHTML = avatarUrl 
-          ? `<img src="${avatarUrl}" alt="">` 
-          : `<span>${(state.user.email?.[0] || '?').toUpperCase()}</span>`;
-      }
-      if (email) email.textContent = state.user.email || 'Connecté';
-      if (logoutItem) logoutItem.style.display = 'flex';
-    } else {
-      if (avatar) avatar.innerHTML = '<span>?</span>';
-      if (email) email.textContent = state.isLocalMode ? 'Mode local' : 'Non connecté';
-      if (logoutItem) logoutItem.style.display = state.isLocalMode ? 'flex' : 'none';
-    }
-  }
-
-  // ===== SUPABASE SYNC =====
-  async function loadFromSupabase() {
-    if (!state.user || !sb) return;
-    
-    try {
-      const { data, error } = await sb
-        .from('tasks')
-        .select('*')
-        .eq('user_id', state.user.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      state.tasks = data || [];
-    } catch (e) {
-      console.error('Load error:', e);
-    }
-  }
-
-  async function saveTaskToSupabase(task) {
-    if (!state.user || state.isLocalMode || !sb) {
-      saveLocal();
-      return;
-    }
-    
-    try {
-      const taskData = {
-        id: task.id,
-        user_id: state.user.id,
-        title: task.title,
-        notes: task.notes || null,
-        priority: task.priority || 'medium',
-        category_id: task.category_id || null,
-        due_date: task.due_date || null,
-        completed: task.completed || false,
-        created_at: task.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      const { error } = await sb.from('tasks').upsert(taskData);
-      if (error) throw error;
-    } catch (e) {
-      console.error('Save error:', e);
-    }
-  }
-
-  async function deleteTaskFromSupabase(taskId) {
-    if (!state.user || state.isLocalMode || !sb) return;
-    try {
-      await sb.from('tasks').delete().eq('id', taskId);
-    } catch (e) {
-      console.error('Delete error:', e);
-    }
-  }
-
-  function saveLocal() {
-    try {
-      localStorage.setItem('tf_tasks', JSON.stringify(state.tasks));
-    } catch(e) { console.error(e); }
-  }
-
-  function saveCategories() {
-    try {
-      localStorage.setItem('tf_categories', JSON.stringify(state.categories));
-    } catch(e) { console.error(e); }
-  }
-
-  // ===== THEME =====
-  function applyTheme() {
-    document.documentElement.setAttribute('data-theme', state.theme);
-    const toggle = $('#theme-toggle');
-    if (toggle) toggle.classList.toggle('active', state.theme === 'dark');
-  }
-
-  function toggleTheme() {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('tf_theme', state.theme);
-    applyTheme();
-  }
-
-  // ===== RENDER =====
-  function updateCounts() {
-    const active = state.tasks.filter(t => !t.completed);
-    const countAll = $('#count-all');
-    const countUrgent = $('#count-urgent');
-    const countMedium = $('#count-medium');
-    const countLow = $('#count-low');
-    const countDone = $('#count-done');
-    
-    if (countAll) countAll.textContent = active.length;
-    if (countUrgent) countUrgent.textContent = active.filter(t => getPriority(t) === 'high').length;
-    if (countMedium) countMedium.textContent = active.filter(t => getPriority(t) === 'medium').length;
-    if (countLow) countLow.textContent = active.filter(t => getPriority(t) === 'low').length;
-    if (countDone) countDone.textContent = state.tasks.filter(t => t.completed).length;
-  }
-
-  function renderTasks() {
-    const main = $('#main');
-    if (!main) return;
-    
-    let tasks = [...state.tasks];
-
-    // Filter by view
-    if (state.currentView === 'today') {
-      const today = new Date().toISOString().split('T')[0];
-      tasks = tasks.filter(t => {
-        if (t.completed) return false;
-        const due = t.due_date || t.dueDate;
-        return due === today || getEffectivePriority(t) === 'high' || !due;
-      });
-    } else if (state.currentView === 'all') {
-      tasks = tasks.filter(t => !t.completed);
-    } else if (state.currentView === 'archive') {
-      tasks = tasks.filter(t => t.completed);
-    } else if (state.currentView === 'categories') {
-      renderCategories();
-      return;
-    }
-
-    // Filter by priority
-    if (state.currentFilter === 'high') {
-      tasks = tasks.filter(t => getPriority(t) === 'high' && !t.completed);
-    } else if (state.currentFilter === 'medium') {
-      tasks = tasks.filter(t => getPriority(t) === 'medium' && !t.completed);
-    } else if (state.currentFilter === 'low') {
-      tasks = tasks.filter(t => getPriority(t) === 'low' && !t.completed);
-    } else if (state.currentFilter === 'done') {
-      tasks = state.tasks.filter(t => t.completed);
-    }
-
-    tasks = sortTasks(tasks);
-
-    if (!tasks.length) {
-      const messages = {
-        all: { title: 'Tout est fait !', sub: 'Ajoute une tâche avec le bouton +' },
-        high: { title: 'Aucune tâche urgente', sub: 'Profite du calme 😎' },
-        medium: { title: 'Aucune tâche importante', sub: 'Tout roule !' },
-        low: { title: 'Aucune tâche chill', sub: 'Ajoutes-en une !' },
-        done: { title: 'Aucune tâche terminée', sub: 'Commence par en finir une !' }
-      };
-      const msg = messages[state.currentFilter] || messages.all;
-      main.innerHTML = `<div class="empty-state"><h3>${msg.title}</h3><p>${msg.sub}</p></div>`;
-      return;
-    }
-
-    main.innerHTML = `<div class="section"><div class="task-list">${tasks.map(t => {
-      const p = getEffectivePriority(t);
-      const due = t.due_date || t.dueDate;
-      const days = getDaysUntil(due);
-      const cat = state.categories.find(c => c.id === (t.category_id || t.categoryId));
-      let dc = '';
-      if (days !== null && days <= 1) dc = 'urgent';
-      return `<div class="task-item ${t.completed?'completed':''}" data-id="${t.id}">
-        <div class="task-checkbox priority-${p} ${t.completed?'checked':''}" data-id="${t.id}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <div class="task-content" data-id="${t.id}">
-          <div class="task-title">${t.title || 'Sans titre'}</div>
-          <div class="task-meta">
-            ${cat ? `<span class="task-tag" style="border-left:3px solid ${cat.color};padding-left:8px">${cat.name}</span>` : ''}
-            ${due ? `<span class="task-tag ${dc}">${formatDate(due)}</span>` : ''}
-          </div>
-        </div>
-      </div>`;
-    }).join('')}</div></div>`;
-
-    attachTaskListeners();
-  }
-
-  function renderCategories() {
-    const main = $('#main');
-    if (!main) return;
-    
-    main.innerHTML = `
-      <div class="section">
-        <div class="section-title">Mes catégories</div>
-        ${state.categories.map(cat => {
-          const count = state.tasks.filter(t => (t.category_id || t.categoryId) === cat.id && !t.completed).length;
-          return `<div class="category-item" data-id="${cat.id}">
-            <div class="dot" style="background:${cat.color}"></div>
-            <div class="name">${cat.name}</div>
-            <div class="count">${count} tâche${count !== 1 ? 's' : ''}</div>
-            <button class="delete-btn" data-id="${cat.id}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>`;
-        }).join('')}
-        <button class="btn btn-secondary" id="add-category-btn" style="margin-top:16px;width:100%">
-          + Ajouter une catégorie
-        </button>
-      </div>
-    `;
-    
-    $$('.category-item .delete-btn').forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        deleteCategory(btn.dataset.id);
-      };
-    });
-    
-    const addBtn = $('#add-category-btn');
-    if (addBtn) addBtn.onclick = openCategoryModal;
-  }
-
-  function renderCategoryChips() {
-    const container = $('#category-chips');
-    if (!container) return;
-    
-    const selected = state.editingTask?.category_id || state.editingTask?.categoryId || state.categories[0]?.id;
-    container.innerHTML = state.categories.map(cat => 
-      `<div class="chip ${cat.id === selected ? 'selected' : ''}" data-category="${cat.id}"><div class="dot" style="background:${cat.color}"></div>${cat.name}</div>`
-    ).join('');
-  }
-
-  function render() {
-    updateCounts();
-    renderTasks();
-    updateNav();
-    const dateEl = $('#header-date');
-    if (dateEl) {
-      const now = new Date();
-      dateEl.textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-    }
-  }
-
-  function updateNav() {
-    $$('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.view === state.currentView));
-    $$('.stat-chip[data-filter]').forEach(c => c.classList.toggle('active', c.dataset.filter === state.currentFilter));
-    
-    const statsRow = $('#stats-row');
-    if (statsRow) statsRow.classList.toggle('hidden', state.currentView === 'categories');
-    
-    const titles = { today: "Aujourd'hui", all: 'Toutes les tâches', categories: 'Catégories', archive: 'Archives' };
-    const titleEl = $('#page-title');
-    if (titleEl) titleEl.textContent = titles[state.currentView] || "Aujourd'hui";
-  }
-
-  function attachTaskListeners() {
-    $$('.task-checkbox').forEach(el => {
-      el.onclick = (e) => {
-        e.stopPropagation();
-        completeTask(el.dataset.id);
-      };
-    });
-    $$('.task-content').forEach(el => {
-      el.onclick = () => {
-        const task = state.tasks.find(t => t.id === el.dataset.id);
-        if (task) openModal(task);
-      };
-    });
-  }
-
-  // ===== TASK ACTIONS =====
-  async function completeTask(id) {
-    const task = state.tasks.find(t => t.id === id);
-    if (!task) return;
-    task.completed = !task.completed;
-    task.updated_at = new Date().toISOString();
-    await saveTaskToSupabase(task);
-    saveLocal();
+  
+  // Check local mode
+  if (isLocalMode) {
+    tasks = JSON.parse(localStorage.getItem('tf_tasks') || '[]');
+    updateUserUI();
+    showApp();
     render();
-    if (task.completed) toast('Bien joué ! 🎉');
+    return;
   }
+  
+  // No session, show auth
+  showAuth();
+}
 
-  async function saveTask() {
-    const titleEl = $('#task-input');
-    const title = titleEl?.value?.trim();
-    if (!title) { toast('Ajoute un titre'); return; }
-    
-    const priorityEl = $('.chip[data-priority].selected');
-    const categoryEl = $('.chip[data-category].selected');
-    const dateEl = $('#task-date');
-    const notesEl = $('#task-notes');
-    
-    const priority = priorityEl?.dataset?.priority || 'medium';
-    const categoryId = categoryEl?.dataset?.category || state.categories[0]?.id;
-    const dueDate = dateEl?.value || null;
-    const notes = notesEl?.value?.trim() || '';
-
-    if (state.editingTask) {
-      const task = state.tasks.find(t => t.id === state.editingTask.id);
-      if (task) {
-        task.title = title;
-        task.priority = priority;
-        task.category_id = categoryId;
-        task.due_date = dueDate;
-        task.notes = notes;
-        task.updated_at = new Date().toISOString();
-        await saveTaskToSupabase(task);
-      }
-      toast('Modifié');
-    } else {
-      const task = {
-        id: genId(),
-        title,
-        priority,
-        category_id: categoryId,
-        due_date: dueDate,
-        notes,
-        completed: false,
-        created_at: new Date().toISOString()
-      };
-      state.tasks.unshift(task);
-      await saveTaskToSupabase(task);
-      toast('Ajouté');
-    }
-    
-    saveLocal();
-    closeModal();
+// Auth state listener
+supabase.auth.onAuthStateChange(async (event, session) => {
+  console.log('Auth event:', event, 'Session:', session ? 'yes' : 'no');
+  
+  if (event === 'SIGNED_IN' && session?.user) {
+    currentUser = session.user;
+    isLocalMode = false;
+    localStorage.removeItem('tf_local_mode');
+    await loadTasks();
+    updateUserUI();
+    showApp();
     render();
-  }
-
-  async function deleteTask() {
-    if (!state.editingTask) return;
-    const id = state.editingTask.id;
-    state.tasks = state.tasks.filter(t => t.id !== id);
-    await deleteTaskFromSupabase(id);
-    saveLocal();
-    closeModal();
-    render();
-    toast('Supprimé');
-  }
-
-  // ===== CATEGORY ACTIONS =====
-  function deleteCategory(id) {
-    if (state.categories.length <= 1) {
-      toast('Garde au moins une catégorie');
-      return;
-    }
-    
-    const cat = state.categories.find(c => c.id === id);
-    if (!confirm(`Supprimer "${cat?.name}" ?`)) return;
-    
-    state.categories = state.categories.filter(c => c.id !== id);
-    saveCategories();
-    render();
-    toast('Catégorie supprimée');
-  }
-
-  function saveCategory() {
-    const nameEl = $('#category-name-input');
-    const name = nameEl?.value?.trim();
-    if (!name) { toast('Ajoute un nom'); return; }
-    
-    const colorEl = $('.color-option.selected');
-    const color = colorEl?.dataset?.color || '#8b5cf6';
-    
-    state.categories.push({
-      id: 'cat_' + genId(),
-      name,
-      color
-    });
-    
-    saveCategories();
-    closeCategoryModal();
-    render();
-    toast('Catégorie ajoutée');
-  }
-
-  // ===== MODALS =====
-  function openModal(task) {
-    state.editingTask = task || null;
-    
-    const titleEl = $('#modal-title');
-    const inputEl = $('#task-input');
-    const notesEl = $('#task-notes');
-    const dateEl = $('#task-date');
-    const deleteBtn = $('#delete-btn');
-    
-    if (titleEl) titleEl.textContent = task ? 'Modifier' : 'Nouvelle tâche';
-    if (inputEl) inputEl.value = task?.title || '';
-    if (notesEl) notesEl.value = task?.notes || '';
-    if (dateEl) dateEl.value = task?.due_date || task?.dueDate || '';
-    if (deleteBtn) deleteBtn.style.display = task ? 'block' : 'none';
-    
-    $$('.chip[data-priority]').forEach(c => c.classList.toggle('selected', c.dataset.priority === (task?.priority || 'medium')));
-    renderCategoryChips();
-    if (task?.category_id || task?.categoryId) {
-      $$('.chip[data-category]').forEach(c => c.classList.toggle('selected', c.dataset.category === (task.category_id || task.categoryId)));
-    }
-    
-    const modal = $('#task-modal');
-    if (modal) modal.classList.add('active');
-    setTimeout(() => inputEl?.focus(), 300);
-  }
-
-  function closeModal() {
-    state.editingTask = null;
-    const modal = $('#task-modal');
-    if (modal) modal.classList.remove('active');
-  }
-
-  function openCategoryModal() {
-    const nameEl = $('#category-name-input');
-    if (nameEl) nameEl.value = '';
-    $$('.color-option').forEach(c => c.classList.remove('selected'));
-    const firstColor = $('.color-option');
-    if (firstColor) firstColor.classList.add('selected');
-    const modal = $('#category-modal');
-    if (modal) modal.classList.add('active');
-    setTimeout(() => nameEl?.focus(), 300);
-  }
-
-  function closeCategoryModal() {
-    const modal = $('#category-modal');
-    if (modal) modal.classList.remove('active');
-  }
-
-  function openSettings() {
-    const panel = $('#settings-panel');
-    const backdrop = $('#settings-backdrop');
-    if (panel) panel.classList.add('open');
-    if (backdrop) backdrop.classList.add('open');
-  }
-
-  function closeSettings() {
-    const panel = $('#settings-panel');
-    const backdrop = $('#settings-backdrop');
-    if (panel) panel.classList.remove('open');
-    if (backdrop) backdrop.classList.remove('open');
-  }
-
-  // ===== AUTH UI =====
-  function showLoginForm() {
-    const login = $('#login-form');
-    const signup = $('#signup-form');
-    const forgot = $('#forgot-form');
-    const tabLogin = $('#tab-login');
-    const tabSignup = $('#tab-signup');
-    
-    if (login) login.style.display = 'block';
-    if (signup) signup.style.display = 'none';
-    if (forgot) forgot.style.display = 'none';
-    if (tabLogin) tabLogin.classList.add('active');
-    if (tabSignup) tabSignup.classList.remove('active');
-    hideMessages();
-  }
-
-  function showSignupForm() {
-    const login = $('#login-form');
-    const signup = $('#signup-form');
-    const forgot = $('#forgot-form');
-    const tabLogin = $('#tab-login');
-    const tabSignup = $('#tab-signup');
-    
-    if (login) login.style.display = 'none';
-    if (signup) signup.style.display = 'block';
-    if (forgot) forgot.style.display = 'none';
-    if (tabLogin) tabLogin.classList.remove('active');
-    if (tabSignup) tabSignup.classList.add('active');
-    hideMessages();
-  }
-
-  function showForgotForm() {
-    const login = $('#login-form');
-    const signup = $('#signup-form');
-    const forgot = $('#forgot-form');
-    const tabLogin = $('#tab-login');
-    const tabSignup = $('#tab-signup');
-    
-    if (login) login.style.display = 'none';
-    if (signup) signup.style.display = 'none';
-    if (forgot) forgot.style.display = 'block';
-    if (tabLogin) tabLogin.classList.remove('active');
-    if (tabSignup) tabSignup.classList.remove('active');
-    hideMessages();
-  }
-
-  // ===== INIT =====
-  function init() {
-    applyTheme();
-    setupAuthListener();
-    
-    // Auth tabs
-    const tabLogin = $('#tab-login');
-    const tabSignup = $('#tab-signup');
-    if (tabLogin) tabLogin.onclick = showLoginForm;
-    if (tabSignup) tabSignup.onclick = showSignupForm;
-
-    // Auth buttons
-    const loginBtn = $('#login-btn');
-    const signupBtn = $('#signup-btn');
-    const forgotBtn = $('#forgot-btn');
-    const googleBtn = $('#google-login');
-    const skipBtn = $('#skip-auth');
-    const forgotLink = $('#forgot-password');
-    const backLink = $('#back-to-login');
-    
-    if (loginBtn) loginBtn.onclick = loginWithEmail;
-    if (signupBtn) signupBtn.onclick = signupWithEmail;
-    if (forgotBtn) forgotBtn.onclick = forgotPassword;
-    if (googleBtn) googleBtn.onclick = loginWithGoogle;
-    if (skipBtn) skipBtn.onclick = continueWithoutAccount;
-    if (forgotLink) forgotLink.onclick = showForgotForm;
-    if (backLink) backLink.onclick = showLoginForm;
-
-    // Enter key for forms
-    const loginPass = $('#login-password');
-    const signupPass = $('#signup-password');
-    const forgotEmail = $('#forgot-email');
-    
-    if (loginPass) loginPass.onkeypress = e => { if (e.key === 'Enter') loginWithEmail(); };
-    if (signupPass) signupPass.onkeypress = e => { if (e.key === 'Enter') signupWithEmail(); };
-    if (forgotEmail) forgotEmail.onkeypress = e => { if (e.key === 'Enter') forgotPassword(); };
-
-    // Task modal
-    const fab = $('#fab');
-    const modalClose = $('#modal-close');
-    const cancelBtn = $('#cancel-btn');
-    const saveBtn = $('#save-btn');
-    const deleteBtn = $('#delete-btn');
-    const taskModal = $('#task-modal');
-    
-    if (fab) fab.onclick = () => openModal(null);
-    if (modalClose) modalClose.onclick = closeModal;
-    if (cancelBtn) cancelBtn.onclick = closeModal;
-    if (saveBtn) saveBtn.onclick = saveTask;
-    if (deleteBtn) deleteBtn.onclick = deleteTask;
-    if (taskModal) taskModal.onclick = e => { if (e.target.id === 'task-modal') closeModal(); };
-
-    // Category modal
-    const catClose = $('#category-modal-close');
-    const catCancel = $('#category-cancel-btn');
-    const catSave = $('#category-save-btn');
-    const catModal = $('#category-modal');
-    
-    if (catClose) catClose.onclick = closeCategoryModal;
-    if (catCancel) catCancel.onclick = closeCategoryModal;
-    if (catSave) catSave.onclick = saveCategory;
-    if (catModal) catModal.onclick = e => { if (e.target.id === 'category-modal') closeCategoryModal(); };
-    
-    const colorPicker = $('#color-picker');
-    if (colorPicker) {
-      colorPicker.onclick = e => {
-        const option = e.target.closest('.color-option');
-        if (option) {
-          $$('.color-option').forEach(c => c.classList.remove('selected'));
-          option.classList.add('selected');
-        }
-      };
-    }
-
-    // Priority chips
-    $$('.chip[data-priority]').forEach(c => {
-      c.onclick = () => {
-        $$('.chip[data-priority]').forEach(x => x.classList.remove('selected'));
-        c.classList.add('selected');
-      };
-    });
-
-    // Category chips
-    const catChips = $('#category-chips');
-    if (catChips) {
-      catChips.onclick = e => {
-        const chip = e.target.closest('.chip');
-        if (chip) {
-          $$('.chip[data-category]').forEach(x => x.classList.remove('selected'));
-          chip.classList.add('selected');
-        }
-      };
-    }
-
-    // Navigation
-    $$('.nav-item').forEach(i => {
-      i.onclick = () => {
-        state.currentView = i.dataset.view;
-        state.currentFilter = 'all';
-        render();
-      };
-    });
-    
-    $$('.stat-chip[data-filter]').forEach(c => {
-      c.onclick = () => {
-        state.currentFilter = c.dataset.filter;
-        render();
-      };
-    });
-
-    // Settings
-    const avatar = $('#user-avatar');
-    const settingsClose = $('#settings-close');
-    const settingsBackdrop = $('#settings-backdrop');
-    const themeToggle = $('#theme-toggle');
-    const logoutItem = $('#logout-item');
-    
-    if (avatar) avatar.onclick = openSettings;
-    if (settingsClose) settingsClose.onclick = closeSettings;
-    if (settingsBackdrop) settingsBackdrop.onclick = closeSettings;
-    if (themeToggle) themeToggle.onclick = toggleTheme;
-    if (logoutItem) logoutItem.onclick = logout;
-
-    // Check auth and show appropriate screen
-    checkAuth().then(isLoggedIn => {
-      if (!isLoggedIn && !state.isLocalMode) {
-        showAuth();
-      }
-    });
-
-    // Service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+    toast('Connecté !');
+  } else if (event === 'SIGNED_OUT') {
+    currentUser = null;
+    tasks = [];
+    if (!isLocalMode) {
+      showAuth();
     }
   }
+});
 
-  // Start when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+async function loginWithEmail() {
+  const email = $('login-email').value.trim();
+  const password = $('login-password').value;
+  
+  if (!email || !password) {
+    showError('Remplis tous les champs');
+    return;
+  }
+  
+  hideMessages();
+  
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  
+  if (error) {
+    console.error('Login error:', error);
+    showError(error.message.includes('Invalid') ? 'Email ou mot de passe incorrect' : error.message);
+  }
+}
+
+async function signupWithEmail() {
+  const email = $('signup-email').value.trim();
+  const password = $('signup-password').value;
+  
+  if (!email || !password) {
+    showError('Remplis tous les champs');
+    return;
+  }
+  
+  if (password.length < 6) {
+    showError('Le mot de passe doit faire au moins 6 caractères');
+    return;
+  }
+  
+  hideMessages();
+  
+  const { data, error } = await supabase.auth.signUp({ 
+    email, 
+    password,
+    options: { emailRedirectTo: window.location.origin }
+  });
+  
+  if (error) {
+    console.error('Signup error:', error);
+    showError(error.message);
+  } else if (data?.user?.identities?.length === 0) {
+    showError('Cet email est déjà utilisé');
   } else {
-    init();
+    showSuccess('Vérifie ta boîte mail pour confirmer ton compte !');
   }
-})();
+}
+
+async function forgotPassword() {
+  const email = $('forgot-email').value.trim();
+  
+  if (!email) {
+    showError('Entre ton email');
+    return;
+  }
+  
+  hideMessages();
+  
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+  
+  if (error) {
+    showError(error.message);
+  } else {
+    showSuccess('Email envoyé ! Vérifie ta boîte mail.');
+  }
+}
+
+async function loginWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+  
+  if (error) {
+    toast('Erreur: ' + error.message);
+  }
+}
+
+async function logout() {
+  await supabase.auth.signOut();
+  currentUser = null;
+  tasks = [];
+  isLocalMode = false;
+  localStorage.removeItem('tf_tasks');
+  localStorage.removeItem('tf_local_mode');
+  updateUserUI();
+  closeSettings();
+  showAuth();
+}
+
+function continueWithoutAccount() {
+  isLocalMode = true;
+  localStorage.setItem('tf_local_mode', 'true');
+  tasks = JSON.parse(localStorage.getItem('tf_tasks') || '[]');
+  updateUserUI();
+  showApp();
+  render();
+  toast('Mode local activé');
+}
+
+function updateUserUI() {
+  const avatar = $('user-avatar');
+  
+  if (currentUser) {
+    const url = currentUser.user_metadata?.avatar_url;
+    avatar.innerHTML = url 
+      ? `<img src="${url}" alt="">` 
+      : `<span>${(currentUser.email?.[0] || '?').toUpperCase()}</span>`;
+    $('settings-email').textContent = currentUser.email || 'Connecté';
+    $('logout-item').style.display = 'flex';
+  } else {
+    avatar.innerHTML = '<span>?</span>';
+    $('settings-email').textContent = isLocalMode ? 'Mode local' : 'Non connecté';
+    $('logout-item').style.display = isLocalMode ? 'flex' : 'none';
+  }
+}
+
+// ===== DATA =====
+async function loadTasks() {
+  if (!currentUser) return;
+  
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+  
+  if (!error) {
+    tasks = data || [];
+  }
+}
+
+async function saveTask(task) {
+  if (isLocalMode || !currentUser) {
+    localStorage.setItem('tf_tasks', JSON.stringify(tasks));
+    return;
+  }
+  
+  await supabase.from('tasks').upsert({
+    ...task,
+    user_id: currentUser.id,
+    updated_at: new Date().toISOString()
+  });
+}
+
+async function deleteTaskFromDB(id) {
+  if (isLocalMode || !currentUser) return;
+  await supabase.from('tasks').delete().eq('id', id);
+}
+
+function saveLocal() {
+  localStorage.setItem('tf_tasks', JSON.stringify(tasks));
+}
+
+function saveCategories() {
+  localStorage.setItem('tf_categories', JSON.stringify(categories));
+}
+
+// ===== HELPERS =====
+function formatDate(d) {
+  if (!d) return null;
+  const date = new Date(d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tom = new Date(today); tom.setDate(tom.getDate()+1);
+  if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
+  if (date.toDateString() === tom.toDateString()) return 'Demain';
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+function getDaysUntil(d) {
+  if (!d) return null;
+  const date = new Date(d); const today = new Date();
+  today.setHours(0,0,0,0); date.setHours(0,0,0,0);
+  return Math.ceil((date - today) / (1000*60*60*24));
+}
+
+function getPriority(t) { return t.priority || 'medium'; }
+
+function getEffectivePriority(t) {
+  const due = t.due_date || t.dueDate;
+  if (due) {
+    const days = getDaysUntil(due);
+    if (days !== null && days <= 1) return 'high';
+  }
+  return t.priority || 'medium';
+}
+
+function sortTasks(arr) {
+  const order = { high: 0, medium: 1, low: 2 };
+  return [...arr].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    return order[getEffectivePriority(a)] - order[getEffectivePriority(b)];
+  });
+}
+
+const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+// ===== THEME =====
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', theme);
+  $('theme-toggle').classList.toggle('active', theme === 'dark');
+}
+
+function toggleTheme() {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('tf_theme', theme);
+  applyTheme();
+}
+
+// ===== RENDER =====
+function updateCounts() {
+  const active = tasks.filter(t => !t.completed);
+  $('count-all').textContent = active.length;
+  $('count-urgent').textContent = active.filter(t => getPriority(t) === 'high').length;
+  $('count-medium').textContent = active.filter(t => getPriority(t) === 'medium').length;
+  $('count-low').textContent = active.filter(t => getPriority(t) === 'low').length;
+  $('count-done').textContent = tasks.filter(t => t.completed).length;
+}
+
+function render() {
+  updateCounts();
+  
+  if (currentView === 'categories') {
+    renderCategories();
+  } else {
+    renderTasks();
+  }
+  
+  // Update nav
+  $qa('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.view === currentView));
+  $qa('.stat-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === currentFilter));
+  $('stats-row').classList.toggle('hidden', currentView === 'categories');
+  
+  const titles = { today: "Aujourd'hui", all: 'Toutes les tâches', categories: 'Catégories', archive: 'Archives' };
+  $('page-title').textContent = titles[currentView];
+  $('header-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function renderTasks() {
+  const main = $('main');
+  let list = [...tasks];
+  
+  // View filter
+  if (currentView === 'today') {
+    const today = new Date().toISOString().split('T')[0];
+    list = list.filter(t => !t.completed && ((t.due_date || t.dueDate) === today || getEffectivePriority(t) === 'high' || !(t.due_date || t.dueDate)));
+  } else if (currentView === 'all') {
+    list = list.filter(t => !t.completed);
+  } else if (currentView === 'archive') {
+    list = list.filter(t => t.completed);
+  }
+  
+  // Priority filter
+  if (currentFilter === 'high') list = list.filter(t => getPriority(t) === 'high' && !t.completed);
+  else if (currentFilter === 'medium') list = list.filter(t => getPriority(t) === 'medium' && !t.completed);
+  else if (currentFilter === 'low') list = list.filter(t => getPriority(t) === 'low' && !t.completed);
+  else if (currentFilter === 'done') list = tasks.filter(t => t.completed);
+  
+  list = sortTasks(list);
+  
+  if (!list.length) {
+    main.innerHTML = `<div class="empty-state"><h3>Aucune tâche</h3><p>Ajoute une tâche avec le bouton +</p></div>`;
+    return;
+  }
+  
+  main.innerHTML = `<div class="section"><div class="task-list">${list.map(t => {
+    const p = getEffectivePriority(t);
+    const due = t.due_date || t.dueDate;
+    const cat = categories.find(c => c.id === (t.category_id || t.categoryId));
+    const isUrgent = due && getDaysUntil(due) <= 1;
+    
+    return `<div class="task-item ${t.completed?'completed':''}" data-id="${t.id}">
+      <div class="task-checkbox priority-${p} ${t.completed?'checked':''}" data-id="${t.id}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="task-content" data-id="${t.id}">
+        <div class="task-title">${t.title}</div>
+        <div class="task-meta">
+          ${cat ? `<span class="task-tag" style="border-left:3px solid ${cat.color};padding-left:8px">${cat.name}</span>` : ''}
+          ${due ? `<span class="task-tag ${isUrgent?'urgent':''}">${formatDate(due)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div></div>`;
+  
+  // Attach listeners
+  $qa('.task-checkbox').forEach(el => {
+    el.onclick = e => { e.stopPropagation(); toggleComplete(el.dataset.id); };
+  });
+  $qa('.task-content').forEach(el => {
+    el.onclick = () => openTaskModal(tasks.find(t => t.id === el.dataset.id));
+  });
+}
+
+function renderCategories() {
+  const main = $('main');
+  
+  main.innerHTML = `<div class="section">
+    <div class="section-title">Mes catégories</div>
+    ${categories.map(cat => {
+      const count = tasks.filter(t => (t.category_id || t.categoryId) === cat.id && !t.completed).length;
+      return `<div class="category-item">
+        <div class="dot" style="background:${cat.color}"></div>
+        <div class="name">${cat.name}</div>
+        <div class="count">${count} tâche${count !== 1 ? 's' : ''}</div>
+        <button class="delete-btn" data-id="${cat.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
+    }).join('')}
+    <button class="btn btn-secondary" id="add-category-btn" style="margin-top:16px;width:100%">+ Ajouter une catégorie</button>
+  </div>`;
+  
+  $qa('.delete-btn').forEach(btn => {
+    btn.onclick = () => deleteCategory(btn.dataset.id);
+  });
+  $('add-category-btn').onclick = openCategoryModal;
+}
+
+// ===== TASK ACTIONS =====
+async function toggleComplete(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  
+  task.completed = !task.completed;
+  task.updated_at = new Date().toISOString();
+  
+  await saveTask(task);
+  saveLocal();
+  render();
+  
+  if (task.completed) toast('Bien joué ! 🎉');
+}
+
+async function saveTaskForm() {
+  const title = $('task-input').value.trim();
+  if (!title) { toast('Ajoute un titre'); return; }
+  
+  const priority = $q('.chip[data-priority].selected')?.dataset.priority || 'medium';
+  const categoryId = $q('.chip[data-category].selected')?.dataset.category || categories[0]?.id;
+  const dueDate = $('task-date').value || null;
+  const notes = $('task-notes').value.trim();
+  
+  if (editingTask) {
+    const task = tasks.find(t => t.id === editingTask.id);
+    if (task) {
+      Object.assign(task, { title, priority, category_id: categoryId, due_date: dueDate, notes });
+      await saveTask(task);
+    }
+    toast('Modifié');
+  } else {
+    const task = {
+      id: genId(),
+      title, priority, category_id: categoryId, due_date: dueDate, notes,
+      completed: false,
+      created_at: new Date().toISOString()
+    };
+    tasks.unshift(task);
+    await saveTask(task);
+    toast('Ajouté');
+  }
+  
+  saveLocal();
+  closeTaskModal();
+  render();
+}
+
+async function deleteTask() {
+  if (!editingTask) return;
+  
+  tasks = tasks.filter(t => t.id !== editingTask.id);
+  await deleteTaskFromDB(editingTask.id);
+  saveLocal();
+  closeTaskModal();
+  render();
+  toast('Supprimé');
+}
+
+// ===== CATEGORY ACTIONS =====
+function deleteCategory(id) {
+  if (categories.length <= 1) {
+    toast('Garde au moins une catégorie');
+    return;
+  }
+  
+  const cat = categories.find(c => c.id === id);
+  if (!confirm(`Supprimer "${cat?.name}" ?`)) return;
+  
+  categories = categories.filter(c => c.id !== id);
+  saveCategories();
+  render();
+  toast('Catégorie supprimée');
+}
+
+function saveCategoryForm() {
+  const name = $('category-name-input').value.trim();
+  if (!name) { toast('Ajoute un nom'); return; }
+  
+  const color = $q('.color-option.selected')?.dataset.color || '#8b5cf6';
+  
+  categories.push({ id: 'cat_' + genId(), name, color });
+  saveCategories();
+  closeCategoryModal();
+  render();
+  toast('Catégorie ajoutée');
+}
+
+// ===== MODALS =====
+function openTaskModal(task = null) {
+  editingTask = task;
+  
+  $('modal-title').textContent = task ? 'Modifier' : 'Nouvelle tâche';
+  $('task-input').value = task?.title || '';
+  $('task-notes').value = task?.notes || '';
+  $('task-date').value = task?.due_date || task?.dueDate || '';
+  $('delete-btn').style.display = task ? 'block' : 'none';
+  
+  $qa('.chip[data-priority]').forEach(c => c.classList.toggle('selected', c.dataset.priority === (task?.priority || 'medium')));
+  
+  // Render category chips
+  const sel = task?.category_id || task?.categoryId || categories[0]?.id;
+  $('category-chips').innerHTML = categories.map(cat => 
+    `<div class="chip ${cat.id === sel ? 'selected' : ''}" data-category="${cat.id}"><div class="dot" style="background:${cat.color}"></div>${cat.name}</div>`
+  ).join('');
+  
+  $('task-modal').classList.add('active');
+  setTimeout(() => $('task-input').focus(), 300);
+}
+
+function closeTaskModal() {
+  editingTask = null;
+  $('task-modal').classList.remove('active');
+}
+
+function openCategoryModal() {
+  $('category-name-input').value = '';
+  $qa('.color-option').forEach(c => c.classList.remove('selected'));
+  $q('.color-option').classList.add('selected');
+  $('category-modal').classList.add('active');
+  setTimeout(() => $('category-name-input').focus(), 300);
+}
+
+function closeCategoryModal() {
+  $('category-modal').classList.remove('active');
+}
+
+function openSettings() {
+  $('settings-panel').classList.add('open');
+  $('settings-backdrop').classList.add('open');
+}
+
+function closeSettings() {
+  $('settings-panel').classList.remove('open');
+  $('settings-backdrop').classList.remove('open');
+}
+
+// ===== AUTH UI =====
+function showLoginForm() {
+  $('login-form').style.display = 'block';
+  $('signup-form').style.display = 'none';
+  $('forgot-form').style.display = 'none';
+  $('tab-login').classList.add('active');
+  $('tab-signup').classList.remove('active');
+  hideMessages();
+}
+
+function showSignupForm() {
+  $('login-form').style.display = 'none';
+  $('signup-form').style.display = 'block';
+  $('forgot-form').style.display = 'none';
+  $('tab-login').classList.remove('active');
+  $('tab-signup').classList.add('active');
+  hideMessages();
+}
+
+function showForgotForm() {
+  $('login-form').style.display = 'none';
+  $('signup-form').style.display = 'none';
+  $('forgot-form').style.display = 'block';
+  $('tab-login').classList.remove('active');
+  $('tab-signup').classList.remove('active');
+  hideMessages();
+}
+
+// ===== INIT =====
+function init() {
+  applyTheme();
+  
+  // Auth UI
+  $('tab-login').onclick = showLoginForm;
+  $('tab-signup').onclick = showSignupForm;
+  $('login-btn').onclick = loginWithEmail;
+  $('signup-btn').onclick = signupWithEmail;
+  $('forgot-btn').onclick = forgotPassword;
+  $('google-login').onclick = loginWithGoogle;
+  $('skip-auth').onclick = continueWithoutAccount;
+  $('forgot-password').onclick = showForgotForm;
+  $('back-to-login').onclick = showLoginForm;
+  
+  $('login-password').onkeypress = e => { if (e.key === 'Enter') loginWithEmail(); };
+  $('signup-password').onkeypress = e => { if (e.key === 'Enter') signupWithEmail(); };
+  $('forgot-email').onkeypress = e => { if (e.key === 'Enter') forgotPassword(); };
+  
+  // Task modal
+  $('fab').onclick = () => openTaskModal();
+  $('modal-close').onclick = closeTaskModal;
+  $('cancel-btn').onclick = closeTaskModal;
+  $('save-btn').onclick = saveTaskForm;
+  $('delete-btn').onclick = deleteTask;
+  $('task-modal').onclick = e => { if (e.target.id === 'task-modal') closeTaskModal(); };
+  
+  // Priority chips
+  $qa('.chip[data-priority]').forEach(c => {
+    c.onclick = () => {
+      $qa('.chip[data-priority]').forEach(x => x.classList.remove('selected'));
+      c.classList.add('selected');
+    };
+  });
+  
+  // Category chips (delegated)
+  $('category-chips').onclick = e => {
+    const chip = e.target.closest('.chip');
+    if (chip) {
+      $qa('.chip[data-category]').forEach(x => x.classList.remove('selected'));
+      chip.classList.add('selected');
+    }
+  };
+  
+  // Category modal
+  $('category-modal-close').onclick = closeCategoryModal;
+  $('category-cancel-btn').onclick = closeCategoryModal;
+  $('category-save-btn').onclick = saveCategoryForm;
+  $('category-modal').onclick = e => { if (e.target.id === 'category-modal') closeCategoryModal(); };
+  
+  $('color-picker').onclick = e => {
+    const opt = e.target.closest('.color-option');
+    if (opt) {
+      $qa('.color-option').forEach(c => c.classList.remove('selected'));
+      opt.classList.add('selected');
+    }
+  };
+  
+  // Navigation
+  $qa('.nav-item').forEach(i => {
+    i.onclick = () => {
+      currentView = i.dataset.view;
+      currentFilter = 'all';
+      render();
+    };
+  });
+  
+  $qa('.stat-chip').forEach(c => {
+    c.onclick = () => {
+      currentFilter = c.dataset.filter;
+      render();
+    };
+  });
+  
+  // Settings
+  $('user-avatar').onclick = openSettings;
+  $('settings-close').onclick = closeSettings;
+  $('settings-backdrop').onclick = closeSettings;
+  $('theme-toggle').onclick = toggleTheme;
+  $('logout-item').onclick = logout;
+  
+  // Service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  
+  // Start auth check
+  initAuth();
+}
+
+init();
 </script>
 </body>
 </html>
